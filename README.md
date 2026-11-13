@@ -18,3 +18,7 @@ GNU Lesser General Public License for more details.
 See [LICENSE](LICENSE) for the GNU Lesser General Public License version 3
 and [COPYING](COPYING) for the GNU General Public License version 3,
 whose terms it incorporates.
+
+## AI-Generated Code Notice
+
+Parts of this project were created with assistance from AI tools (e.g. large language models). All AI-assisted contributions were reviewed and adapted by maintainers before inclusion. If you need provenance for specific changes, please refer to the Git history and commit messages.
