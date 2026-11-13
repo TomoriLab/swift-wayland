@@ -32,6 +32,7 @@ Cleanup captures must not strongly retain their owning session or cells, form ow
 live --owner/root/prerequisite close--> closing
 closing --quiescent leaf drain--> runtimeReleasing --action returns--> retired
 live/closing --proven native destruction--> nativeConsumed --quiescence--> retired
+live --explicit ownership handoff--> transferred --quiescence--> retired
 ```
 
 A native notification during runtimeReleasing observes the already claimed action and cannot claim it again. A duplicate notification after retirement returns false. nativeConsumed discharges the native obligation immediately but retains captured bookkeeping until the outer frame returns. The associated native identifier remains reserved until that retirement, preventing a new generation from sharing still-reachable callback context storage.
@@ -90,7 +91,7 @@ The runtime tests exercise externally observable behavior rather than comparing 
 | Bounded state traces | All 256 four-event traces over close/root-close/native-notification/access preserve the tested conservation relation |
 | Swift API ownership | Actual package-module compiler probes reject double consumption, owner copying, reference close, Sendable capture, and unmarked unsafe adoption |
 
-The tested accounting relation is acquisitions = runtimeReleases + nativeReleases + outstandingObligations. Retained native-consumed records are counted separately until callback captures become unreachable. These tests are not a proof of all M1–M19 invariants or all native APIs.
+The tested accounting relation is acquisitions = runtimeReleases + nativeReleases + transfers + outstandingObligations. Retained native-consumed records are counted separately until callback captures become unreachable. These tests are not a proof of all M1–M19 invariants or all native APIs.
 
 ## Reproduction
 
@@ -113,16 +114,16 @@ The tests use Swift Testing only. The initial default runner also invoked an emp
 
 | Check | Result |
 |---|---|
-| Swift Testing, debug and release, warnings as errors | 22 tests passed in each configuration |
-| AddressSanitizer with leak detection and no suppressions | 22 tests passed |
-| ThreadSanitizer with halt on error and no suppressions | 22 tests passed |
-| Actual module ownership compiler matrix | 12 results passed: two accepted and ten expected rejections |
-| Package-access symbol graph and DocC | 61 documented symbols matched rendered pages; 78 total pages; warnings as errors passed |
+| Swift Testing, debug and release, warnings as errors | 45 tests passed in each configuration |
+| AddressSanitizer with leak detection and no suppressions | 45 tests passed |
+| ThreadSanitizer with halt on error and no suppressions | 45 tests passed |
+| Actual module ownership compiler matrix | 22 results passed: two accepted and twenty expected rejections |
+| Package-access symbol graph and DocC | 121 documented symbols matched rendered pages; 143 total pages; warnings as errors passed |
 
 The separate minimal standard-Mutex reproducer initially returned TSan exit code 66; it is not counted as a runtime pass. The earlier XCTest-runner leak is not counted as clean leak evidence. The final commands use the documented pthread primitive and Swift Testing-only runner with leak detection enabled.
 
 ## Limits and next steps
 
-This milestone does not implement FD owners, proxy/resource adapters, callback subscription attachment state, external-memory borrow guards, transport reads, SHM, or protocol generation. No performance benchmark or cross-architecture claim is made. The reserved handle kinds do not imply implemented adapters; in particular, repeated native ref acquisitions for one pointer need a future shared-reference obligation model rather than duplicate adoption of the same native key. The record capacity bounds retained native records; it is not yet a complete protocol/event quota policy. User-created reference cycles in unsafe cleanup captures cannot be collected automatically.
+FD owners and detachable callback attachment/subscription primitives are implemented; see <doc:DescriptorsAndCallbacks>. This milestone does not implement proxy/resource adapters, nonremovable proxy dispatchers, external-memory borrow guards, transport reads, SHM, or protocol generation. No performance benchmark or cross-architecture claim is made. The reserved handle kinds do not imply implemented adapters; in particular, repeated native ref acquisitions for one pointer need a future shared-reference obligation model rather than duplicate adoption of the same native key. The record capacity bounds retained native records; it is not yet a complete protocol/event quota policy. User-created reference cycles in unsafe cleanup captures cannot be collected automatically.
 
-Next adapters must attach the real native pointer and its exact failure/destruction contract to these checked records. Native cascading destruction, callback context retention independent of user delivery, affine teardown, and prepared-read cancellation require their own tests before exposure. Human review of the unsafe adoption contracts and the audited synchronization primitive remains required.
+Next adapters must attach the real native pointer and its exact failure/destruction contract to these checked records. Native cascading destruction, native-specific dispatcher lifetime, affine teardown, and prepared-read cancellation require their own tests before exposure. Human review of the unsafe adoption contracts and the audited synchronization primitive remains required.

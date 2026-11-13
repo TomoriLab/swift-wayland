@@ -11,6 +11,7 @@ private enum RecordState {
     case closing
     case runtimeReleasing
     case nativeConsumed
+    case transferred
 }
 
 private final class CleanupRecord {
@@ -55,6 +56,7 @@ final class RuntimeControl {
     private var acquisitions: UInt64 = 0
     private var runtimeReleases: UInt64 = 0
     private var nativeReleases: UInt64 = 0
+    private var transfers: UInt64 = 0
 
     init(maximumRecords: Int, initialGeneration: UInt64 = 0) throws {
         guard maximumRecords > 0 else { throw OwnershipError.invalidCapacity }
@@ -249,12 +251,37 @@ final class RuntimeControl {
             guard let record = records[cell.identity.generation], record.identity == cell.identity else { return false }
             // An existing frame proves where deferred capture retirement can safely happen.
             guard nativeFrames > 0 else { throw OwnershipError.invalidHandle }
-            if record.state == .runtimeReleasing || record.state == .nativeConsumed { return false }
+            if record.state == .runtimeReleasing || record.state == .nativeConsumed || record.state == .transferred { return false }
             guard record.dependents.isEmpty else { throw OwnershipError.liveDependents }
             record.state = .nativeConsumed
             nativeReleases += 1
             enqueue(record)
             return true
+        }
+    }
+
+    /// A transfer discharges ownership without executing its native release action.
+    @unsafe func relinquish(_ cell: HandleCell) throws {
+        try withDomain {
+            try validate(cell)
+            guard nativeFrames > 0, let record = records[cell.identity.generation] else {
+                throw OwnershipError.invalidHandle
+            }
+            guard record.dependents.isEmpty else { throw OwnershipError.liveDependents }
+            record.state = .transferred
+            transfers += 1
+            enqueue(record)
+        }
+    }
+
+    /// Callback delivery requires the complete native invocation to have an existing lease.
+    func withCallbackFrame<Result: ~Copyable>(_ cell: HandleCell, _ body: () throws -> Result) throws -> Result {
+        try withDomain {
+            guard nativeFrames > 0 else { throw OwnershipError.invalidHandle }
+            try validate(cell, matching: .registration)
+            nativeFrames += 1
+            defer { nativeFrames -= 1 }
+            return try body()
         }
     }
 
@@ -282,7 +309,7 @@ final class RuntimeControl {
                 retire(record)
                 // Captures can run destructors, so their lifetime ends outside all bookkeeping locks.
                 withExtendedLifetime(action) {}
-            case .nativeConsumed:
+            case .nativeConsumed, .transferred:
                 let captures = record.cleanup
                 record.cleanup = nil
                 retire(record)
@@ -304,8 +331,8 @@ final class RuntimeControl {
     func snapshot() throws -> OwnershipSnapshot {
         try withDomain {
             OwnershipSnapshot(
-                acquisitions: acquisitions, runtimeReleases: runtimeReleases, nativeReleases: nativeReleases,
-                outstandingObligations: records.values.reduce(0) { $0 + ($1.state == .nativeConsumed ? 0 : 1) },
+                acquisitions: acquisitions, runtimeReleases: runtimeReleases, nativeReleases: nativeReleases, transfers: transfers,
+                outstandingObligations: records.values.reduce(0) { $0 + ($1.state == .nativeConsumed || $1.state == .transferred ? 0 : 1) },
                 retainedRecords: records.count, nativeFrames: nativeFrames, closing: closing
             )
         }

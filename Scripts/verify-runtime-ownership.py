@@ -45,6 +45,11 @@ def main():
         patterns = {
             "Accepted": [],
             "DoubleClose": ["'owner' consumed more than once"],
+            "CopyDescriptor": ["'copy' cannot be applied to noncopyable types"],
+            "CopyReceivedDescriptor": ["'copy' cannot be applied to noncopyable types"],
+            "CopySubscription": ["'copy' cannot be applied to noncopyable types"],
+            "DoubleDescriptorClose": ["'owner' consumed more than once"],
+            "UnauditedDescriptorBorrow": ["expression uses unsafe constructs but is not marked with 'unsafe'"],
             "CopyOwner": ["'copy' cannot be applied to noncopyable types"],
             "ReferenceCannotClose": ["value of type 'ObjectHandle' has no member 'close'"],
             "SendReference": ["capture of 'handle' with non-Sendable type 'ObjectHandle'"],

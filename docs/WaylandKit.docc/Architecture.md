@@ -97,3 +97,5 @@ The initial executable matrix is documented in <doc:ToolchainValidation>. Standa
 ## Implemented ownership core
 
 The phase 2 package-level core is documented in <doc:OwnershipRuntime>. It uses handle cells and authoritative dependency records, a short pthread bookkeeping mutex, logical single-thread admission, and a global native-frame depth to defer release. Actions never run under the bookkeeping mutex. Unsafe adoption accepts non-affine, nonthrowing release actions; client/server and affine resource adapters remain separate work. The user explicitly postponed aarch64 validation for this x86_64 milestone.
+
+Descriptor owners and detachable callback contexts now use these records as described in <doc:DescriptorsAndCallbacks>. Subscription cancellation changes only synchronized delivery state. Physical detach retains context through native quiescence and runs before prerequisite descriptors close. The descriptor ledger counts transfer separately from native release.

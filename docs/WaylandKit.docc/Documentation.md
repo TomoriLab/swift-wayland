@@ -76,7 +76,7 @@ Each tutorial includes complete buildable source, prerequisites, tested toolchai
 
 ## Documentation build and publication gate
 
-The package now contains the actual WaylandRuntime target. Package-access symbol graphs are extracted with SwiftPM and combined with this catalog using bundled DocC; no DocC plugin dependency is installed. The current build renders 78 pages, including all 61 extracted runtime symbols. Every extracted symbol has a documentation comment. Symbol external IDs were checked against generated page metadata. Visual inspection remains outstanding.
+The package now contains the actual WaylandRuntime target. Package-access symbol graphs are extracted with SwiftPM and combined with this catalog using bundled DocC; no DocC plugin dependency is installed. The current build renders 143 pages, including all 121 extracted runtime symbols. Every extracted symbol has a documentation comment. Symbol external IDs were checked against generated page metadata. Visual inspection remains outstanding.
 
 The verified local workflow, run from the repository root, is:
 

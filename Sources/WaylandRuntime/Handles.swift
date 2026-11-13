@@ -18,6 +18,8 @@ package enum HandleKind: Hashable, Sendable {
     case eventSource
     /// Stable native-reachable registration or callback storage.
     case registration
+    /// An exclusively owned file descriptor; the number is reserved until retirement.
+    case fileDescriptor
     /// An explicitly owned SHM buffer reference, not a pixel borrow.
     case sharedMemoryBuffer
     /// An explicitly owned SHM pool reference.
@@ -89,9 +91,11 @@ package struct OwnershipSnapshot: Equatable, Sendable {
     package let runtimeReleases: UInt64
     /// The number of obligations consumed by native destruction notifications.
     package let nativeReleases: UInt64
+    /// The number of obligations explicitly transferred outside this runtime.
+    package let transfers: UInt64
     /// Live, closing, or currently executing native release obligations.
     package let outstandingObligations: Int
-    /// All retained records, including native-consumed captures awaiting quiescence.
+    /// All retained records, including native-consumed or transferred captures awaiting quiescence.
     package let retainedRecords: Int
     /// The number of active nested synchronous native frames in this session.
     package let nativeFrames: Int

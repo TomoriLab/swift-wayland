@@ -14,4 +14,11 @@ void wayland_runtime_mutex_destroy(struct wayland_runtime_mutex *mutex);
 /* A static mutex serializes a nonwrapping process-local counter; zero reports exhaustion. */
 uint64_t wayland_runtime_next_session(void);
 
+/* Validation and duplication do not consume the input descriptor. */
+int wayland_runtime_descriptor_validate(int descriptor);
+/* The caller owns a successful close-on-exec duplicate; failure writes a scoped error code. */
+int wayland_runtime_descriptor_duplicate(int descriptor, int *error);
+/* Exactly one Linux close attempt is made; the result is zero or the saved errno. */
+int wayland_runtime_descriptor_close(int descriptor);
+
 #endif

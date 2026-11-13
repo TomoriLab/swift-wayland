@@ -13,4 +13,24 @@ struct runtime_test_resource *runtime_test_resource_create(struct runtime_test_o
 int runtime_test_dispatch(struct runtime_test_resource *resource);
 void runtime_test_resource_destroy(struct runtime_test_resource *resource);
 
+
+/* Descriptor helpers are independent libc oracles for runtime ownership tests. */
+int runtime_test_descriptor_open(void);
+int runtime_test_descriptor_is_open(int descriptor);
+int runtime_test_descriptor_cloexec(int descriptor);
+int runtime_test_descriptor_close(int descriptor);
+int runtime_test_descriptor_replace(int descriptor);
+int runtime_test_high_descriptor_count(void);
+
+struct runtime_test_callback_slot;
+typedef int (*runtime_test_context_callback)(void *data, int descriptor);
+struct runtime_test_callback_slot *runtime_test_callback_slot_create(void);
+void runtime_test_callback_slot_destroy(struct runtime_test_callback_slot *slot);
+void runtime_test_callback_install(struct runtime_test_callback_slot *slot, runtime_test_context_callback callback, void *data);
+int runtime_test_callback_invoke(struct runtime_test_callback_slot *slot, int descriptor);
+void runtime_test_callback_detach(struct runtime_test_callback_slot *slot, int invoke_while_detaching);
+int runtime_test_callback_detach_count(const struct runtime_test_callback_slot *slot);
+
+int runtime_test_matching_descriptor_count(int descriptor);
+
 #endif

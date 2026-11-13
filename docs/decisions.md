@@ -56,3 +56,7 @@ Implementation has started with isolated compiler, ownership-graph, and native A
 The user explicitly deferred aarch64 validation and authorized actual x86_64 runtime implementation. The ownership core now has package-access authority owners, checked references, authoritative records, dependency-ordered release, and synchronous native-frame quiescence. This milestone does not waive aarch64 testing for future support claims. See [OwnershipRuntime](WaylandKit.docc/OwnershipRuntime.md).
 
 The initial standard Synchronization.Mutex implementation triggered TSan diagnostics also reproduced with an independent protected counter. The runtime consistently uses a narrowly audited pthread mutex shim for sanitizer-visible synchronization rather than adding exclusions. Runtime objects remain non-Sendable. The one unchecked conformance is the private-storage synchronization primitive; no native object is covered by it.
+
+## Descriptor and detachable callback milestone: 2026-11-14
+
+Descriptor ownership now distinguishes success-only adoption, consume-on-failure receive, pre-registration receive scopes, duplication, scoped raw borrow, and explicit transfer. Detachable callback contexts use independent physical registration records and delivery cancellation flags. Their implementation and native quiescence preconditions are documented in [DescriptorsAndCallbacks](WaylandKit.docc/DescriptorsAndCallbacks.md). Nonremovable proxy dispatchers and asynchronous transport coordination remain future adapters.

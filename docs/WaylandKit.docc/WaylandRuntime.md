@@ -27,6 +27,22 @@ Read <doc:OwnershipRuntime> for the implemented state model, unsafe boundaries, 
 - ``CloseProgress``
 - ``OwnershipError``
 
+### Descriptors and callbacks
+
+- ``OwnedFileDescriptor``
+- ``BorrowedFileDescriptor``
+- ``ReceivedFileDescriptor``
+- ``FileDescriptorError``
+- ``FileDescriptorCloseResult``
+- ``FileDescriptorSnapshot``
+- ``CallbackAttachment``
+- ``CallbackSubscription``
+- ``CallbackCancellation``
+- ``CallbackContextError``
+- ``CallbackInstallResult``
+- ``CallbackDeliveryResult``
+- <doc:DescriptorsAndCallbacks>
+
 ### Design and verification
 
 - <doc:OwnershipRuntime>
