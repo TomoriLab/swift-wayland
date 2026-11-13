@@ -15,7 +15,7 @@ The project is developed in this repository as `swift-wayland`.
 
 ## Project status
 
-WaylandKit is in early development. Its ownership runtime is taking shape alongside compiler and interoperability tests. Wayland client/server APIs and application examples are not available yet.
+WaylandKit is in early development. Its ownership foundation and initial client/server paths are being developed alongside compiler and interoperability tests. It is not yet ready for application use.
 
 See the [design documentation](docs/README.md) for the proposed architecture, decisions, and development plan.
 

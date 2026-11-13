@@ -12,7 +12,7 @@ Native callbacks execute synchronously on the dispatching domain. They never cal
 
 ## Client read transaction
 
-The future implementation must conform to libwayland's documented prepared-read protocol. Dispatching pending events and preparing a read are distinct operations; a readable fd is not evidence that the desired queue has no pending events. [Wayland client API](https://wayland.freedesktop.org/docs/html/apb.html).
+The implementation must conform to libwayland's documented prepared-read protocol. Dispatching pending events and preparing a read are distinct operations; a readable fd is not evidence that the desired queue has no pending events. [Wayland client API](https://wayland.freedesktop.org/docs/html/apb.html).
 
 The following is algorithmic pseudocode, not compiled Swift:
 
@@ -72,3 +72,5 @@ Set explicit maximum queued event count, total payload bytes, received descripto
 Initial safe prepared-read transactions are synchronous and must be consumed/canceled through their originating coordinator without await or migration. The native library's multireader behavior remains an advanced compatibility contract; the safe facade must not mix coordinated reads with Mesa/EGL or foreign readers unless an integration contract proves compatibility. Native refcounted SHM operations are not assumed thread-safe merely because the wrapper has ARC.
 
 Use a process-lifetime C trampoline for global logging. Dynamic Swift handler storage is synchronized and retired only after all concurrent invocations finish. Default to a single library-managed installation and no unsupported automatic restoration of a foreign handler. Nested logging must have a nonallocating recursion policy. Do not invoke user Swift handlers from async POSIX signal context; only native event-loop signal callbacks dispatched in ordinary execution can enter Swift. Thread-local SHM begin/end access cannot migrate through actor suspension.
+
+The current synchronous client and server slices implement the guarded paths described in <doc:ClientAndServer>. Async coordination, advanced sources, and full native coverage remain open in <doc:ImplementationProgress>.

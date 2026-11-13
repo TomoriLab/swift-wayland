@@ -13,6 +13,8 @@ This catalog specifies the proposed architecture. It does not describe an implem
 - <doc:Architecture>
 - <doc:OwnershipAndFFI>
 - <doc:OwnershipRuntime>
+- <doc:ProxyDispatcher>
+- <doc:ClientAndServer>
 - <doc:MathematicalModel>
 - <doc:SafetyReview>
 
@@ -25,4 +27,6 @@ This catalog specifies the proposed architecture. It does not describe an implem
 
 - <doc:Documentation>
 - <doc:Validation>
+- <doc:ImplementationProgress>
+- <doc:DispatcherBenchmark>
 - <doc:ToolchainValidation>

@@ -4,6 +4,8 @@
 /// libwayland allocation families. Protocol interface checks remain the
 /// responsibility of future typed bindings.
 package enum HandleKind: Hashable, Sendable {
+    /// A client display connection that disconnects after its dependent proxies and queues.
+    case clientDisplay
     /// A client proxy allocation owned by its adapter.
     case clientProxy
     /// A client event queue whose display dependency must remain valid.

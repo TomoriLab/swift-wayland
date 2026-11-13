@@ -260,6 +260,35 @@ final class RuntimeControl {
         }
     }
 
+    /// Server client destruction consumes only the native-owned client/resource subtree.
+    @unsafe func nativeDestroyedServerSubtree(_ cell: HandleCell) throws -> Bool {
+        try withDomain {
+            guard cell.control === self else { throw OwnershipError.foreignSession }
+            guard nativeFrames > 0 else { throw OwnershipError.invalidHandle }
+            guard let root = records[cell.identity.generation], root.identity == cell.identity else { return false }
+            guard root.identity.kind == .serverClient else { throw OwnershipError.wrongKind }
+            var pending = [root.identity.generation]
+            var subtree: Set<UInt64> = []
+            while let generation = pending.popLast() {
+                guard subtree.insert(generation).inserted, let record = records[generation] else { continue }
+                guard generation == root.identity.generation || record.identity.kind == .serverResource else {
+                    throw OwnershipError.liveDependents
+                }
+                pending.append(contentsOf: record.dependents)
+            }
+            let changed = root.state == .live || root.state == .closing
+            for generation in subtree {
+                guard let record = records[generation] else { continue }
+                if record.state == .live || record.state == .closing {
+                    record.state = .nativeConsumed
+                    nativeReleases += 1
+                }
+                if record.state == .nativeConsumed { enqueue(record) }
+            }
+            return changed
+        }
+    }
+
     /// A transfer discharges ownership without executing its native release action.
     @unsafe func relinquish(_ cell: HandleCell) throws {
         try withDomain {
@@ -275,10 +304,10 @@ final class RuntimeControl {
     }
 
     /// Callback delivery requires the complete native invocation to have an existing lease.
-    func withCallbackFrame<Result: ~Copyable>(_ cell: HandleCell, _ body: () throws -> Result) throws -> Result {
+    func withCallbackFrame<Result: ~Copyable>(_ cell: HandleCell, matching kind: HandleKind = .registration, _ body: () throws -> Result) throws -> Result {
         try withDomain {
             guard nativeFrames > 0 else { throw OwnershipError.invalidHandle }
-            try validate(cell, matching: .registration)
+            try validate(cell, matching: kind)
             nativeFrames += 1
             defer { nativeFrames -= 1 }
             return try body()

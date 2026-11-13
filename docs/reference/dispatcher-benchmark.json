@@ -1,0 +1,80 @@
+{
+  "iterationsPerSample": 10000,
+  "nativeMedianEventsPerSecond": 962666.0767448948,
+  "nativeSeconds": [
+    0.010406471,
+    0.010373021,
+    0.010364275,
+    0.010625769000000007,
+    0.010375166,
+    0.010387818,
+    0.010386033,
+    0.010750801,
+    0.010691894
+  ],
+  "samples": 9,
+  "scope": "Scalar event through identical native socketpair peers; generic Swift observation dispatcher versus C counter dispatcher. Setup and teardown excluded.",
+  "swiftMedianEventsPerSecond": 646415.6285716484,
+  "swiftSeconds": [
+    0.015582952,
+    0.015784296,
+    0.015409677,
+    0.015638916,
+    0.015469923,
+    0.015441933,
+    0.015448766,
+    0.015715038,
+    0.015400698
+  ],
+  "swiftThroughputLossFraction": 0.32851520980421167,
+  "unmeasured": [
+    "per-event allocation count",
+    "latency distribution",
+    "representative compositor",
+    "generated typed dispatch"
+  ],
+  "warmupEvents": 1000,
+  "cpuAffinity": [
+    0
+  ],
+  "cpuModel": "Intel(R) Core(TM) i9-14900K",
+  "kernel": "7.3.1-arare-workstation-bore-llvm-v1",
+  "architecture": "x86_64",
+  "compiler": "Swift version 6.4.2 (swift-6.4.2-RELEASE)\nTarget: x86_64-unknown-linux-gnu",
+  "nativeVersions": {
+    "wayland-client": "1.26.0",
+    "wayland-server": "1.26.0"
+  },
+  "sourceHashes": {
+    "Sources/WaylandClient/Connection.swift": "ac2c0607a8d34ceb7a30b584d31077d616529c087519360901a1dceb4baa0e5e",
+    "Sources/WaylandClient/ProxyDispatcher.swift": "fcaddda6ae0105947f0832c9ce763a39d526d340dd4d31d584523ed65cd3625d",
+    "Sources/WaylandProtocol/CoreProtocol.swift": "a82b841b262972cad09b78978471000e54672ad2f8e2d50518d003742ab31559",
+    "Sources/WaylandProtocol/Schema.swift": "553084a9862e7ba901ad71ca5ed3a4a7f90ee420bb0e6b7ca4299daad6711f75",
+    "Sources/WaylandRuntime/CallbackContext.swift": "ddefb30832b7a2399d207e4d881566c0aa75cf5bb5bc24f783e8c7123844439c",
+    "Sources/WaylandRuntime/FileDescriptor.swift": "9dcd8f8c9b292fe9eb89f81159765e8d131e6520747af1c765103b07b6dbb250",
+    "Sources/WaylandRuntime/Handles.swift": "3e71a7731959411bb9aef7140adf0f045cc175a40b16448cfcdf88d560aa763a",
+    "Sources/WaylandRuntime/NativeDestructionObserver.swift": "0e75ff57738a73f9bcfc451b4163b562337bf931a43ab1c8e64d3b8f72435a86",
+    "Sources/WaylandRuntime/ProxyDispatcher.swift": "59786be181f32077333054c18fdcb803a0a6a07c8425ef1604866224ed3fe85d",
+    "Sources/WaylandRuntime/ReadCancellation.swift": "56e34b1562f5e4689ae1e8518b9f27dfe80f78ca6ec20ac9480a6619ec0fb3da",
+    "Sources/WaylandRuntime/RuntimeControl.swift": "eb25fd55ea3f5fd043d4951532d5ae42a1973e178458c84be123c323ea5dee7e",
+    "Sources/WaylandRuntime/RuntimeMutex.swift": "b8cca4f6a1507d04b9d7add79bdea9aa9938b2174ca8dedd6d389d75cc24588a",
+    "Sources/WaylandServer/Display.swift": "b0be7fc4da42d09431364f1a8da65d290e7f0010fab38c5feab62b08d3207435",
+    "Sources/WaylandServer/EventSources.swift": "eab3449a89d97be78e16be0d76a268bc607d54d4e46e3672f6791003affdda13",
+    "Sources/CWaylandClient/Proxy.c": "a8da1836401c3500de056d4f1e68ea34c5db09ca1361719e59b3852c3ec301c4",
+    "Sources/CWaylandRuntime/FileDescriptors.c": "69ed9e993bdf9884832f2aa72c49f186c614f2228f8f39d1ada793c8143e7a37",
+    "Sources/CWaylandRuntime/Synchronization.c": "23e46a70359630a43f3acf0cf13d0219a64479f53bca5862de5e4e0b255afac8",
+    "Sources/CWaylandRuntime/Wake.c": "415ca9a1600cb19beab775adbbd745055c5545e304eb28158469ce9275598a66",
+    "Sources/CWaylandServer/Lifetime.c": "3f4bb86d2969312a0e07a50fb1fe3cad0bbe885e9d93bd52b13ab19fea7b58dd",
+    "Sources/CWaylandClient/include/CWaylandClient.h": "1e32cfbd83b282a19482f80c4c43d1f00e8be38bac30a8df4c7822ec517e5a59",
+    "Sources/CWaylandRuntime/include/CWaylandRuntime.h": "490578b44873183d7ac8859a1c2fde30563d5fdaa218bde3b124d39755211c28",
+    "Sources/CWaylandServer/include/CWaylandServer.h": "b272f3db658ac5482507958483fcc2bde958ed712db1b553fb39dd6143680882",
+    "Benchmarks/Dispatcher.swift": "54c3d18e08590c180b31bff042a67ab4b44849bacc9f6520bec0b290ea6158bf",
+    "Tests/RuntimeNativeTestSupport/RuntimeNativeTestSupport.c": "a142fca8e8df9d9320bfdfb4c288d35c6a21f1ed38d4d64c94ce7a26ba96efce",
+    "Scripts/benchmark-dispatcher.py": "20184ac7309e81223cd44214b24bc51b2f645a6495f904068812017bb9c8beee"
+  },
+  "exploratoryLossBootstrap95Percent": [
+    0.31188867352293215,
+    0.3365802335660605
+  ],
+  "comparisonLimit": "The generic Swift observer copies dynamic metadata; the C reference counts scalar callbacks. This is not the equivalent generated typed-path acceptance benchmark."
+}

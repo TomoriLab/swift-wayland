@@ -37,7 +37,7 @@ live --explicit ownership handoff--> transferred --quiescence--> retired
 
 A native notification during runtimeReleasing observes the already claimed action and cannot claim it again. A duplicate notification after retirement returns false. nativeConsumed discharges the native obligation immediately but retains captured bookkeeping until the outer frame returns. The associated native identifier remains reserved until that retirement, preventing a new generation from sharing still-reachable callback context storage.
 
-Native notifications require an existing enclosing native frame and a leaf with no retained dependents. Automatic native cascading destruction of unknown children is not inferred. A child notification retains its cleanup record until frame exit, so simply reporting children first inside the same native call does not satisfy this condition. Parent cascades with retained children remain unsupported and require a dedicated audited cascade operation before those adapters are exposed. The runtime cannot pin an allocation that an external native owner has already freed.
+Native notifications require an existing enclosing native frame and a leaf with no retained dependents. Automatic native cascading destruction of unknown children is not inferred. The server adapter has a separate, source-audited operation for client/resource subtrees described in <doc:ClientAndServer>. A child notification retains its cleanup record until frame exit, so simply reporting children first inside the same native call does not satisfy this condition. Other parent cascades with retained children remain unsupported and require a dedicated audited cascade operation before those adapters are exposed. The runtime cannot pin an allocation that an external native owner has already freed.
 
 ## Dependency order
 
@@ -108,22 +108,32 @@ TSAN_OPTIONS=halt_on_error=1:exitcode=66 \
   swift test --scratch-path .build/runtime-thread --disable-xctest --sanitize thread -Xswiftc -warnings-as-errors
 ```
 
-The tests use Swift Testing only. The initial default runner also invoked an empty XCTest suite that reported 432 bytes of XCTest-owned leaks before Swift Testing executed. --disable-xctest avoids that unrelated runner path while keeping leak detection enabled; no suppression file or sanitizer exclusion is used. Swift sources, the C synchronization shim, and the C native test fixture are instrumented. System libwayland is not rebuilt with instrumentation.
+The tests use Swift Testing only. The initial default runner also invoked an empty XCTest suite that reported 432 bytes of XCTest-owned leaks before Swift Testing executed. --disable-xctest avoids that unrelated runner path while keeping leak detection enabled; no suppression file or sanitizer exclusion is used. Swift sources, the C synchronization shim, and the C native test fixture are instrumented. Ordinary runs use system libwayland. Additional isolated ASan/TSan native builds are verified as described below.
 
 ## Recorded results
 
 | Check | Result |
 |---|---|
-| Swift Testing, debug and release, warnings as errors | 45 tests passed in each configuration |
-| AddressSanitizer with leak detection and no suppressions | 45 tests passed |
-| ThreadSanitizer with halt on error and no suppressions | 45 tests passed |
-| Actual module ownership compiler matrix | 22 results passed: two accepted and twenty expected rejections |
-| Package-access symbol graph and DocC | 121 documented symbols matched rendered pages; 143 total pages; warnings as errors passed |
+| Swift Testing, debug and release, warnings as errors | 68 tests passed in each configuration |
+| AddressSanitizer with leak detection and no suppressions | 68 tests passed |
+| ThreadSanitizer with halt on error and no suppressions | 68 tests passed |
+| Actual module ownership compiler matrix | 24 runtime results and eight concrete-client results passed |
+| Package-access symbol graph and DocC | 275 documented symbols matched rendered pages across four modules; 361 combined pages; warnings as errors passed |
 
 The separate minimal standard-Mutex reproducer initially returned TSan exit code 66; it is not counted as a runtime pass. The earlier XCTest-runner leak is not counted as clean leak evidence. The final commands use the documented pthread primitive and Swift Testing-only runner with leak detection enabled.
 
 ## Limits and next steps
 
-FD owners and detachable callback attachment/subscription primitives are implemented; see <doc:DescriptorsAndCallbacks>. This milestone does not implement proxy/resource adapters, nonremovable proxy dispatchers, external-memory borrow guards, transport reads, SHM, or protocol generation. No performance benchmark or cross-architecture claim is made. The reserved handle kinds do not imply implemented adapters; in particular, repeated native ref acquisitions for one pointer need a future shared-reference obligation model rather than duplicate adoption of the same native key. The record capacity bounds retained native records; it is not yet a complete protocol/event quota policy. User-created reference cycles in unsafe cleanup captures cannot be collected automatically.
+FD owners and detachable callback attachment/subscription primitives are implemented; see <doc:DescriptorsAndCallbacks>. The initial proxy and server resource slices are documented in <doc:ProxyDispatcher> and <doc:ClientAndServer>. Remaining work includes complete protocol bindings, external-memory borrow guards, SHM, complete executable protocol generation, and advanced transport/error APIs. The scalar observation benchmark is recorded separately; no performance-parity or cross-architecture claim is made. The reserved handle kinds do not imply implemented adapters; in particular, repeated native ref acquisitions for one pointer need a future shared-reference obligation model rather than duplicate adoption of the same native key. The record capacity bounds retained native records; it is not yet a complete protocol/event quota policy. User-created reference cycles in unsafe cleanup captures cannot be collected automatically.
 
-Next adapters must attach the real native pointer and its exact failure/destruction contract to these checked records. Native cascading destruction, native-specific dispatcher lifetime, affine teardown, and prepared-read cancellation require their own tests before exposure. Human review of the unsafe adoption contracts and the audited synchronization primitive remains required.
+Next adapters must attach the real native pointer and its exact failure/destruction contract to these checked records. Other native cascades, native-specific dispatcher lifetimes, affine teardown, and asynchronous coordination require their own tests before exposure. Human review of the unsafe adoption contracts and the audited synchronization primitive remains required.
+
+## Instrumented native verification
+
+`python3 Scripts/verify-instrumented-runtime.py --sanitizer address` builds the pinned libwayland 1.26.0 source under .build, verifies the source archive and extracted files, runs the ordinary ASan suite, then executes separate client-instrumented and server-instrumented processes. Both native variants pass the same 68 tests. The libraries intentionally export identical protocol metadata symbols; loading both ASan-instrumented copies together reports an ODR violation before tests start. Separate preloading keeps normal native symbol interposition and all default ODR checks enabled. No sanitizer exclusion or suppression is used. Loader diagnostics verify the requested local library was initialized. Each address run instruments one native library and the Swift/C wrapper while its peer uses the system native library.
+
+`python3 Scripts/verify-instrumented-runtime.py --sanitizer thread` runs the ordinary TSan suite and a second process loading both TSan-instrumented client/server libraries. Swift's native TSan link probe requires the toolchain dispatch and BlocksRuntime libraries; the native build script supplies those link paths explicitly. Both configurations pass 68 tests. Source and build prefixes remain under .build; the host installation is unchanged.
+
+The native archive SHA-256 is 56b3a985cbfe17a926e3bcf037e4d374f44eaa33f3a4b364549dddf0d324cebc. This is a recorded review-input hash, not a claim of signature verification. The native XML is byte-identical to Protocols/wayland.xml. Exact source/native modes, logs, and loader verification JSON are reproducible through the scripts. Valgrind is not installed and has not been run.
+
+The release benchmark initially exposed a Swift 6.4.2 cross-module LLVM verification failure for a private dispatcher context class used through a generic noncopyable owner. Giving those implementation classes module-internal visibility allows the exact release executable to compile; no unsafe guarantee was broadened and no compiler check disabled. The benchmark remains an executable regression check for that configuration.

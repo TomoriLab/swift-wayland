@@ -11,3 +11,7 @@ func descriptor(_ owner: borrowing OwnedFileDescriptor) -> BorrowedFileDescripto
 func received(_ owner: consuming ReceivedFileDescriptor, session: borrowing OwnershipSession) throws -> OwnedFileDescriptor {
     try owner.register(in: session)
 }
+
+func cancelReadAcrossTasks(_ cancellation: ReadCancellation) {
+    Task.detached { cancellation.cancel() }
+}

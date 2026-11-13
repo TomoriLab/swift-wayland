@@ -45,6 +45,7 @@ def main():
         patterns = {
             "Accepted": [],
             "DoubleClose": ["'owner' consumed more than once"],
+            "CopyProxyOwner": ["'copy' cannot be applied to noncopyable types"],
             "CopyDescriptor": ["'copy' cannot be applied to noncopyable types"],
             "CopyReceivedDescriptor": ["'copy' cannot be applied to noncopyable types"],
             "CopySubscription": ["'copy' cannot be applied to noncopyable types"],

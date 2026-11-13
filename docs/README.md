@@ -1,6 +1,6 @@
 # WaylandKit design
 
-Status: phase 2 ownership runtime implementation on x86_64 Linux; aarch64 validation is deferred by user instruction. Baseline date: 2026-11-14.
+Status: ownership runtime with staged client/server and generator implementation on x86_64 Linux; aarch64 validation is deferred by user instruction. Baseline date: 2026-11-14.
 
 WaylandKit will provide a memory-safe Swift interface to the complete public libwayland surface. Safety takes priority over avoiding a copy or preserving an unsafe C calling convention. Performance requirements are measured against an equivalent C program rather than assumed from the language or ownership model.
 
@@ -20,9 +20,12 @@ The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on
 10. [Swift toolchain validation](WaylandKit.docc/ToolchainValidation.md): executable capability and ownership probes.
 11. [Descriptors and callbacks](WaylandKit.docc/DescriptorsAndCallbacks.md): implemented FD transfer, receive cleanup, and detachable userdata lifetime.
 12. [Ownership runtime](WaylandKit.docc/OwnershipRuntime.md): implemented package-level contracts and runtime tests.
-12. [C API inventory](reference/api-inventory.md) and [core protocol inventory](reference/core-protocol-inventory.md).
+13. [Permanent proxy dispatcher](WaylandKit.docc/ProxyDispatcher.md): nonremovable context, cancellation, and local destruction.
+14. [Client and server slices](WaylandKit.docc/ClientAndServer.md): read coordination, native cascades, and idle sources.
+15. [Implementation progress](WaylandKit.docc/ImplementationProgress.md): completed work and remaining release gates.
+16. [C API inventory](reference/api-inventory.md) and [core protocol inventory](reference/core-protocol-inventory.md).
 
-The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It currently contains conceptual articles only. The package now contains a WaylandRuntime target, C synchronization support, and Swift Testing coverage. Client/server application APIs, application examples, build plugins, and CI are not yet present. Isolated phase 1 compiler/ABI experiments remain under Tests/Toolchain and Scripts. The original conceptual catalog conversion generated nine documentation pages successfully; the toolchain results article extends the catalog. Symbol linking and compiled examples still require package targets and symbol graphs. The Markdown reference inventories are maintained alongside the catalog; future generated DocC reference pages will derive from the same manifest rather than duplicate hand-edited API lists.
+The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It combines conceptual articles with package-access symbol graphs for WaylandRuntime, WaylandClient, WaylandServer, and WaylandProtocol. Independent C peer tests and the schema scanner exist; application-facing APIs, complete typed bindings, tutorials, and CI remain incomplete. The Markdown reference inventories and generated JSON coverage manifest remain adjacent to the catalog. See [ImplementationProgress](WaylandKit.docc/ImplementationProgress.md) before interpreting a generated schema or imported header as completed API coverage.
 
 ## Acceptance contract
 

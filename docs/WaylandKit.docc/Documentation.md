@@ -76,27 +76,16 @@ Each tutorial includes complete buildable source, prerequisites, tested toolchai
 
 ## Documentation build and publication gate
 
-The package now contains the actual WaylandRuntime target. Package-access symbol graphs are extracted with SwiftPM and combined with this catalog using bundled DocC; no DocC plugin dependency is installed. The current build renders 143 pages, including all 121 extracted runtime symbols. Every extracted symbol has a documentation comment. Symbol external IDs were checked against generated page metadata. Visual inspection remains outstanding.
-
-The verified local workflow, run from the repository root, is:
+The package has WaylandRuntime, WaylandClient, WaylandServer, and WaylandProtocol targets. Scripts/build-documentation.py extracts package-access symbol graphs, rejects undocumented symbols, builds each module separately, verifies rendered symbol IDs, and merges the archives. The current build covers 275 documented symbols and 361 combined pages. Conceptual articles come from one source catalog and are copied into isolated per-module build inputs; their namespace differs by module.
 
 ```sh
 source ~/.zshrc
-swift package dump-symbol-graph --minimum-access-level package
-mkdir -p .build/runtime-documentation
-"${SWIFTLY_BIN_DIR:-$HOME/.local/share/swiftly/bin}/swiftly" run docc convert docs/WaylandKit.docc \
-  --additional-symbol-graph-dir .build/out/symbolgraph \
-  --output-dir .build/runtime-documentation/WaylandRuntime.doccarchive \
-  --fallback-display-name WaylandRuntime \
-  --fallback-bundle-identifier org.tomorilab.WaylandKit \
-  --warnings-as-errors
+python3 Scripts/build-documentation.py
 ```
 
-The symbol graph path is the observed Swift 6.4.2 Swift Build output layout. Future build tooling must resolve the corresponding output path when using a different backend. The archive is ignored by Git. No generated archive is committed.
+The combined archive is .build/documentation/WaylandKit.doccarchive. Per-module archives and a machine-readable verification report remain alongside it. The script uses the bundled DocC dependency-link metadata feature for runtime types referenced by client/server APIs, then merges the four archives. The selected DocC accepts the feature flags; no experimental Swift language flag or DocC plugin dependency is added.
 
-The bundled DocC failed an internal precondition when the fallback display name was WaylandKit, matching the existing conceptual article. The same graph and catalog convert successfully with the fallback display name WaylandRuntime. Use the verified module name rather than the earlier standalone conceptual-catalog command. This is a documentation tool/configuration finding and does not change source API access levels.
-
-The original conceptual-only catalog had nine pages and was later extended to ten for toolchain validation. The current catalog includes a module documentation extension and requires the symbol graph in the command above. Swift source examples still require their own compilation checks; producing a page does not prove its example executes correctly.
+The bundled converter rejects multiple main modules in one conversion. An earlier conceptual-catalog fallback name also triggered an internal precondition. The verified workflow therefore uses one main module and matching fallback name per invocation. Empty executable symbol graphs are excluded. Generated documentation remains ignored by Git. Programmatic rendering/link verification does not replace the outstanding visual desktop/narrow-width review or complete tutorial compilation gate.
 
 The intended pipeline is: build module → extract symbol graphs → compile DocC with warnings treated as errors → build tutorial examples → inspect landing pages, topic links, ownership tables, and unsafe warnings → publish a versioned static archive. The package phase may use `swift package generate-documentation` only after the corresponding plugin is explicitly present; it is not assumed to be a built-in command in the current repository.
 

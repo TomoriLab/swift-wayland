@@ -37,7 +37,7 @@ private struct DeliveryState: Sendable {
 }
 
 /// Stores only cancellation bits; it owns no context, runtime cell, or native pointer.
-private final class CallbackDeliveryGate: Sendable {
+final class CallbackDeliveryGate: Sendable {
     private let state: RuntimeMutex<DeliveryState>
     init() throws { state = try RuntimeMutex(DeliveryState()) }
     func cancel() { state.withLock { $0.cancelled = true } }
@@ -53,7 +53,7 @@ private final class CallbackDeliveryGate: Sendable {
 
 /// Allows thread-safe cancellation without transferring a native lifetime capability.
 package struct CallbackCancellation: Sendable {
-    fileprivate let gate: CallbackDeliveryGate
+    let gate: CallbackDeliveryGate
     /// Stops future user delivery without detaching or freeing C userdata.
     package func cancel() { gate.cancel() }
     /// Reports logical cancellation, independently of physical attachment lifetime.
@@ -72,7 +72,7 @@ package struct CallbackSubscription: ~Copyable {
     deinit { cancellation.cancel() }
 }
 
-private final class CallbackStorage<Context: AnyObject> {
+final class CallbackStorage<Context: AnyObject> {
     let gate: CallbackDeliveryGate
     weak var cell: HandleCell?
     var context: Context?
@@ -98,7 +98,8 @@ private final class CallbackStorage<Context: AnyObject> {
 /// The cleanup record retains stable userdata independently of this value. Logical
 /// subscription cancellation does not consume that record. Context and detach
 /// captures are released after physical detach and outer native-frame quiescence.
-/// Thread-affine and nonremovable proxy dispatchers need dedicated future adapters.
+/// Thread-affine callbacks remain unsupported. Permanent proxy dispatchers use
+/// ProxyDispatcherOwner instead of this detachable registration.
 package struct CallbackAttachment<Context: AnyObject>: ~Copyable {
     private let storage: CallbackStorage<Context>
     private let owner: OwnedHandle

@@ -59,4 +59,12 @@ The initial standard Synchronization.Mutex implementation triggered TSan diagnos
 
 ## Descriptor and detachable callback milestone: 2026-11-14
 
-Descriptor ownership now distinguishes success-only adoption, consume-on-failure receive, pre-registration receive scopes, duplication, scoped raw borrow, and explicit transfer. Detachable callback contexts use independent physical registration records and delivery cancellation flags. Their implementation and native quiescence preconditions are documented in [DescriptorsAndCallbacks](WaylandKit.docc/DescriptorsAndCallbacks.md). Nonremovable proxy dispatchers and asynchronous transport coordination remain future adapters.
+Descriptor ownership now distinguishes success-only adoption, consume-on-failure receive, pre-registration receive scopes, duplication, scoped raw borrow, and explicit transfer. Detachable callback contexts use independent physical registration records and delivery cancellation flags. Their implementation and native quiescence preconditions are documented in [DescriptorsAndCallbacks](WaylandKit.docc/DescriptorsAndCallbacks.md). Nonremovable proxy dispatchers are now implemented separately; see the following milestone. Optional asynchronous transport coordination remains future work.
+
+## Permanent dispatchers and subsequent slices: 2026-11-14
+
+A permanent client dispatcher shares the proxy's single cleanup record. Subscription cancellation never destroys native storage. Local proxy destruction precedes context retirement at the complete outer-frame boundary. Concrete observation delivery always cleans incoming descriptors and unclaimed constructors. Raw construction-to-handoff must lease native prerequisites.
+
+The client slice now includes registry/sync/queue operations, a single prepared-read arbiter, and a separately owned cancellation wake eventfd. The server slice adds native client/resource destruction watches and a restricted cascade operation rather than applying the leaf-only notification to arbitrary parents. Idle completion consumes its one-shot native obligation without a second remove.
+
+The host schema generator uses Python's standard XML parser with input quotas and DTD/entity rejection; no production parser dependency was added. Core schema generation is not executable protocol binding coverage. The generated native manifest intentionally keeps the complete release gate false. See [ImplementationProgress](WaylandKit.docc/ImplementationProgress.md).

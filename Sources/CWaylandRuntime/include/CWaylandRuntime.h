@@ -21,4 +21,6 @@ int wayland_runtime_descriptor_duplicate(int descriptor, int *error);
 /* Exactly one Linux close attempt is made; the result is zero or the saved errno. */
 int wayland_runtime_descriptor_close(int descriptor);
 
+/* The caller owns a successful nonblocking close-on-exec eventfd. */
+int wayland_runtime_wake_create(void);
 #endif

@@ -33,4 +33,24 @@ int runtime_test_callback_detach_count(const struct runtime_test_callback_slot *
 
 int runtime_test_matching_descriptor_count(int descriptor);
 
+struct runtime_test_peer;
+struct wl_display;
+struct wl_proxy;
+struct runtime_test_peer *runtime_test_peer_create(void);
+struct wl_display *runtime_test_peer_display(struct runtime_test_peer *peer);
+struct wl_proxy *runtime_test_peer_proxy(struct runtime_test_peer *peer);
+void runtime_test_peer_post(struct runtime_test_peer *peer, unsigned opcode, int descriptor);
+int runtime_test_peer_dispatch(struct runtime_test_peer *peer);
+void runtime_test_peer_disconnect(struct runtime_test_peer *peer);
+void runtime_test_peer_destroy(struct runtime_test_peer *peer);
+struct runtime_test_server;
+struct runtime_test_server *runtime_test_server_create(int *client_descriptor);
+int runtime_test_server_dispatch(struct runtime_test_server *server);
+void runtime_test_server_destroy(struct runtime_test_server *server);
+int runtime_test_socket_pair(int *server_descriptor, int *client_descriptor);
+struct runtime_test_c_client;
+struct runtime_test_c_client *runtime_test_c_client_create(int descriptor);
+int runtime_test_c_client_dispatch(struct runtime_test_c_client *client);
+void runtime_test_c_client_destroy(struct runtime_test_c_client *client);
+double runtime_test_c_benchmark(unsigned iterations);
 #endif

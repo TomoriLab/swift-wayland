@@ -4,7 +4,7 @@ Manage descriptor transfer and detachable callback contexts through authoritativ
 
 ## Implemented boundary
 
-This package-access implementation targets Swift 6.4.2 on x86_64 Linux. It adds descriptor owners, received-event cleanup scopes, detachable callback contexts, and delivery cancellation to <doc:OwnershipRuntime>. It does not yet connect every libwayland event or constructor to these primitives. Nonremovable proxy dispatchers require a separate adapter whose context follows the proxy lifetime; they cannot use a fabricated no-op detach action.
+This package-access implementation targets Swift 6.4.2 on x86_64 Linux. It adds descriptor owners, received-event cleanup scopes, detachable callback contexts, and delivery cancellation to <doc:OwnershipRuntime>. It does not yet connect every libwayland event or constructor to these primitives. Nonremovable proxy dispatchers now use the separate <doc:ProxyDispatcher> adapter whose context follows the proxy lifetime; they cannot use a fabricated no-op detach action.
 
 All native owners, borrowed references, subscriptions, and attachments remain non-Sendable. Only CallbackCancellation is Sendable: it stores synchronized cancellation bits and retains no context, native pointer, or session. The implementation adds no production dependency.
 
@@ -99,4 +99,4 @@ The serialized descriptor/callback suite uses independent C descriptor-table ins
 
 Stress cases include 10,000 descriptor lifecycles, 10,000 physical callback attachments, 1,000 failed duplicate publications with independent descriptor counts, and 500 concurrent cancellation signals. Weak context observations and C detach counts check release separately from runtime ledger totals. Compiler rejection probes verify noncopyable descriptor/receive/subscription authority and explicit unsafe raw access. See <doc:OwnershipRuntime> for exact commands and recorded build, sanitizer, compiler, and DocC results.
 
-Native pthread allocation failure, true concurrent native callback/detach quiescence, Linux EINTR close injection, asynchronous transport cancellation, and nonremovable libwayland proxy dispatchers remain unverified or unimplemented. aarch64 remains deferred.
+Native pthread allocation failure, true concurrent native callback/detach quiescence, Linux EINTR close injection, and asynchronous transport cancellation remain unverified or unimplemented. Nonremovable libwayland proxy dispatchers are implemented separately in <doc:ProxyDispatcher>. aarch64 remains deferred.

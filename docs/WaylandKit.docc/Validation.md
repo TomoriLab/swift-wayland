@@ -8,7 +8,7 @@ The original repository contained README, license texts, ignore rules, and an em
 
 The initial uninitialized shell resolved `swift` to python-swiftclient 4.11.0. Rechecking after `source ~/.zshrc` resolves a shell function from `~/.zsh_config/_swift.zsh` that runs Swiftly. `swift --version` reports Swift 6.4.2 (swift-6.4.2-RELEASE), target x86_64-unknown-linux-gnu. Swiftly also provides DocC under its 6.4.2 toolchain. A standalone catalog conversion with `--warnings-as-errors` passed and generated all nine conceptual documentation pages; page titles and identifiers were checked in the archive JSON.
 
-Phase 1 now includes executable Swift feature, ownership-reference, and native callback/ABI probes. See <doc:ToolchainValidation> for the exact matrix and evidence. These are isolated experiments rather than production wrapper tests. The actual x86_64 ownership runtime now builds and runs package tests as described in <doc:OwnershipRuntime>. Independent client/server peer interoperability, an instrumented libwayland run, benchmarks, and visual documentation inspection remain outstanding.
+Phase 1 now includes executable Swift feature, ownership-reference, and native callback/ABI probes. See <doc:ToolchainValidation> for the exact matrix and evidence. These are isolated experiments rather than production wrapper tests. The actual x86_64 ownership runtime now builds and runs package tests as described in <doc:OwnershipRuntime>. Independent C peer interoperability, isolated native instrumentation, and an exploratory dispatcher benchmark now exist. Full protocol/advanced-API interoperability, equivalent typed performance acceptance, and visual documentation inspection remain outstanding.
 
 ## Delivery gates
 
@@ -82,3 +82,9 @@ Compile-fail tests must prove borrowed views cannot escape through a closure res
 Enumerate cancellation before waiter creation, between creation and publication, during poll, during callback delivery, and after readiness wins. Force descriptor-number reuse and late wake attempts. Fail initialization after every metadata/context/record allocation and before/after native attachment. Require immediate cleanup of provisional obligations without assuming native constructors cannot invoke callbacks synchronously.
 
 Use distinct SHM pools on one thread, same-pool nested access, native resource destruction during retained SHM access, peer mutation/truncation, and final release on a different thread. Safe fallback behavior must be demonstrated or the associated API remains gated. Test live thread-affine endpoints after logical coordinator shutdown and prohibit a safe owner if its final native release cannot be scheduled reliably.
+
+## Current staged implementation
+
+The permanent proxy dispatcher and initial client/server slices now have native peer, cancellation, native cascade, and one-shot idle tests. Detailed commands and remaining gates are recorded in <doc:ClientAndServer>, <doc:OwnershipRuntime>, and <doc:ImplementationProgress>. Isolated native builds instrument client and server in separate ASan processes without disabling ODR checks, and together in a TSan process. A complete advanced API/fuzz/soak matrix is still required.
+
+The first scalar observation experiment is recorded in <doc:DispatcherBenchmark>. It does not establish the equivalent generated typed-path budget or complete phase 7.
