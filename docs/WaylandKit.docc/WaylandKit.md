@@ -12,6 +12,7 @@ This catalog specifies the proposed architecture. It does not describe an implem
 
 - <doc:Architecture>
 - <doc:OwnershipAndFFI>
+- <doc:OwnershipRuntime>
 - <doc:MathematicalModel>
 - <doc:SafetyReview>
 
@@ -24,3 +25,4 @@ This catalog specifies the proposed architecture. It does not describe an implem
 
 - <doc:Documentation>
 - <doc:Validation>
+- <doc:ToolchainValidation>

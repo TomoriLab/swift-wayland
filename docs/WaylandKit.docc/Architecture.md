@@ -82,10 +82,18 @@ Span provides a non-owning bounds-checked view whose lifetime depends on backing
 
 Swift 6.4 provides async defer and task cancellation shields. These serve bounded async shutdown, not synchronous native destruction. [Swift 6.4 release](https://www.swift.org/blog/swift-6.4-released/), [SE-0504](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0504-task-cancellation-shields.md).
 
-Do not adopt a proposal solely because it is accepted on the main branch. SE-0544, mutation and consumption in noncopyable deinitializers, is currently listed as accepted rather than assigned a released version in the inspected proposal. Do not depend on it until a Swift 6.4.2 compiler probe succeeds. Similarly, custom lifetime annotations must be verified against the exact toolchain; owned copies or a checked nonescaping view API are the baseline fallback. No underscored lifetime attribute is part of the public API contract. [SE-0544](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0544-mutate-or-consume-in-deinit.md).
+Do not adopt a proposal solely because it is accepted on the main branch. SE-0544, mutation and consumption in noncopyable deinitializers, is currently listed as accepted rather than assigned a released version in the inspected proposal. The ConsumeInDeinit probe now compiles and executes a specific noncopyable field-consumption pattern on Swift 6.4.2 without experimental flags. Other shapes still require probes. Similarly, custom lifetime annotations must be verified against the exact toolchain; owned copies or a checked nonescaping view API are the baseline fallback. No underscored lifetime attribute is part of the public API contract. [SE-0544](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0544-mutate-or-consume-in-deinit.md).
 
 ## Performance policy
 
 Each native operation performs a bounded number of cell validations and one C call where possible. Use static generated dispatch tables and contiguous argument storage. Avoid dictionary lookups, Task creation, String conversion, or dynamic existential dispatch per ordinary typed scalar event unless measurement justifies them. Borrow immutable callback strings and arrays synchronously under verified lifetime guards; copy explicitly for storage or async delivery. Externally writable SHM follows the stricter owned-snapshot policy in <doc:OwnershipAndFFI> and is excluded from the default borrowed-payload path. Do not claim zero-copy across socket IPC or shared-memory setup.
 
 The registry may use expected O(1) identity lookup; worst-case complexity and growth limits must be documented. Type metadata is immutable and shared. Do not mark all public functions inlinable: exposing internal lifetime machinery would constrain maintenance and ABI evolution. Optimize after inspecting SIL/assembly and benchmark data.
+
+## Phase 1 capability boundary
+
+The initial executable matrix is documented in <doc:ToolchainValidation>. Standard-library Span construction and borrowing work without experimental flags, but a custom public @lifetime-returning signature is rejected unless the experimental LifetimeDependence feature is enabled. The baseline does not enable it. A locally backed Span can also survive await; native no-suspension rules therefore require their own verified API and runtime mechanism. The phase 1 reference graph is not the production handle runtime.
+
+## Implemented ownership core
+
+The phase 2 package-level core is documented in <doc:OwnershipRuntime>. It uses handle cells and authoritative dependency records, a short pthread bookkeeping mutex, logical single-thread admission, and a global native-frame depth to defer release. Actions never run under the bookkeeping mutex. Unsafe adoption accepts non-affine, nonthrowing release actions; client/server and affine resource adapters remain separate work. The user explicitly postponed aarch64 validation for this x86_64 milestone.

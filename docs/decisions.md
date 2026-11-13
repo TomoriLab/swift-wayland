@@ -30,7 +30,7 @@ Status: proposed decisions for implementation review. Recorded 2026-11-13.
 
 | Question | Required evidence | Default until resolved |
 |---|---|---|
-| Exact 6.4.2 lifetime syntax and generic constraints | Compile positive/negative probes | Owned copies or verified checked views; no underscored public annotations |
+| Custom native lifetime syntax and remaining generic constraints | Phase 1 probes validate standard Span and noncopyable transfer; public @lifetime return remains gated | Owned copies or verified checked views; no experimental flags or underscored public annotations |
 | Destruction from non-dispatch threads | Native source audit and race tests | Explicit domain close; serialized fallback with documented affinity |
 | Descriptor ownership on failed constructors/adoption | Version-pinned source and injected errors | Do not expose safe adoption until known |
 | Native client/resource/global-offer destruction ordering | Source audit, C fixture, callback traces | Registry invalidation and deferred context release |
@@ -46,3 +46,13 @@ Status: proposed decisions for implementation review. Recorded 2026-11-13.
 Before phase 1, review M1–M19 and the ownership ledger. Before adding a safe API, resolve its native failure/ownership contract. Before calling the library complete, close every inventory item and validate both protocol directions. Before release, review leak evidence, unsafe sites, documentation, and performance results with a human reviewer.
 
 The follow-up review scenarios SR1–SR18 are recorded in [SafetyReview](WaylandKit.docc/SafetyReview.md). Source-inspected behavior narrows the model but does not close the compiler, native integration, failure-injection, or sanitizer gates.
+
+## Phase 1 implementation evidence
+
+Implementation has started with isolated compiler, ownership-graph, and native ABI/callback experiments. The exact matrix, unsafe boundaries, and reproduction commands are documented in [ToolchainValidation](WaylandKit.docc/ToolchainValidation.md). Consuming a noncopyable field in deinit is supported by the tested Swift 6.4.2 host. Custom public @lifetime return signatures remain behind the experimental LifetimeDependence feature and are excluded from the baseline. Span does not universally prevent suspension. The aarch64 run, production runtime, and human code review remain outstanding.
+
+## Phase 2 scope decision
+
+The user explicitly deferred aarch64 validation and authorized actual x86_64 runtime implementation. The ownership core now has package-access authority owners, checked references, authoritative records, dependency-ordered release, and synchronous native-frame quiescence. This milestone does not waive aarch64 testing for future support claims. See [OwnershipRuntime](WaylandKit.docc/OwnershipRuntime.md).
+
+The initial standard Synchronization.Mutex implementation triggered TSan diagnostics also reproduced with an independent protected counter. The runtime consistently uses a narrowly audited pthread mutex shim for sanitizer-visible synchronization rather than adding exclusions. Runtime objects remain non-Sendable. The one unchecked conformance is the private-storage synchronization primitive; no native object is covered by it.

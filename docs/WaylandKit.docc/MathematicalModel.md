@@ -16,7 +16,7 @@ This model is a design-level specification. It is not a machine-checked proof of
 |---|---|---|---|
 | M1: unique destruction | destructionAuthority(o) is at most one | Noncopyable owner plus terminal cell transition | Duplicate adoption and close/destroy race |
 | M2: valid access | newAccess(o) implies live(o), matching generation/session, live dependencies, and a held lease; existing borrows retain backing until their end | Validate and acquire within one execution guard | Parent closes while a child reference survives |
-| M3: borrow containment | lifetime(view) is a subset of lifetime(access lease) | Nonescapable type or synchronous closure | Return, store, capture, or await with callback bytes |
+| M3: borrow containment | lifetime(view) is a subset of lifetime(access lease) | Verified nonescapable dependency or operation-only checked view; closure shape alone is insufficient | Return, store, capture, or await with callback bytes |
 | M4: bounds | offset ≥ 0, length ≥ 0, offset + length ≤ initializedExtent | Checked arithmetic and bounds checks | Overflow, negative dimensions, truncated arrays |
 | M5: callback balance | retainedContexts − releasedContexts = provisional + nativeReachable + retiredButLeased contexts | Separate delivery and attachment state machines | Self-removal, failed attachment, and proxy subscription cancellation |
 | M6: read balance | successfulPrepare = completedRead + cancelledRead + activeReservations | Noncopyable read reservation | Timeout, cancellation, error, early return |
@@ -107,3 +107,11 @@ A runtime lease cannot prevent a foreign/native owner from freeing an allocation
 Terminal-state checks, lease acquisition, and transition publication are one serialized operation; atomically updating a state flag alone does not protect associated pointer storage. A callback retains the enclosing operation's lifetime but cannot force an external native owner to honor it. Each destruction site needs a version-pinned proof of who controls the free and where the last native use occurs.
 
 Leak freedom assumes normal process execution, finite callbacks, fair coordinator progress, and obeyed unsafe preconditions. Root-owner destruction always requests closure independently of child ARC reachability. A blocked native poll must have a nonallocating wake path. Model cancellation-before-publication as well as cancellation-after-registration; a continuation must never be lost between these steps.
+
+## Initial executable evidence
+
+The phase 1 OwnershipGraph fixture exercises a single-threaded subset of M1, M2, M10, and M13 with authoritative records and root authority. Compile-fail fixtures exercise selected M1/M3/M9/M14 boundaries. These finite examples are not an exhaustive model checker or a proof of M1–M19. See <doc:ToolchainValidation>.
+
+## Runtime evidence
+
+The phase 2 RuntimeControl implements the tested subset of M1, M2, M9, M10, M11, and M13 with bounded native records and acyclic dependency ordering. The package tests additionally enumerate all 256 four-event single-record traces for owner close, root close, native notification, and checked access. They assert conservation after every transition and quiescent drain. This finite model-derived matrix is not a full model checker and does not establish the unimplemented FD, SHM, transport, or subscription invariants. See <doc:OwnershipRuntime>.

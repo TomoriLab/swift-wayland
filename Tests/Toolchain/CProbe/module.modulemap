@@ -1,0 +1,24 @@
+module WaylandCompilerProbe {
+    header "probe.h"
+    export *
+}
+module CWaylandClientProbe [system] {
+    header "client.h"
+    link "wayland-client"
+    export *
+}
+module CWaylandServerProbe [system] {
+    header "server.h"
+    link "wayland-server"
+    export *
+}
+module CWaylandCursorProbe [system] {
+    header "cursor.h"
+    link "wayland-cursor"
+    export *
+}
+module CWaylandEGLProbe [system] {
+    header "egl.h"
+    link "wayland-egl"
+    export *
+}

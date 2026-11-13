@@ -1,0 +1,140 @@
+[
+  {
+    "id": "Ownership",
+    "file": "Ownership.swift",
+    "expect": "run",
+    "output": "PASS ownership transfer"
+  },
+  {
+    "id": "Span",
+    "file": "Span.swift",
+    "expect": "run",
+    "output": "PASS standard-library Span"
+  },
+  {
+    "id": "SpanAcrossAwait",
+    "file": "SpanAcrossAwait.swift",
+    "expect": "run",
+    "output": "PASS locally backed Span"
+  },
+  {
+    "id": "AsyncCleanup",
+    "file": "AsyncCleanup.swift",
+    "expect": "run",
+    "output": "PASS async defer"
+  },
+  {
+    "id": "AuditedPointer",
+    "file": "AuditedPointer.swift",
+    "expect": "run",
+    "output": "PASS explicit audited unsafe boundary"
+  },
+  {
+    "id": "ConsumeInDeinit",
+    "file": "ConsumeInDeinit.swift",
+    "expect": "run",
+    "output": "PASS consuming a noncopyable field"
+  },
+  {
+    "id": "OwnershipGraph",
+    "file": "OwnershipGraph.swift",
+    "expect": "run",
+    "output": "PASS reference graph"
+  },
+  {
+    "id": "NativeCallback",
+    "file": "NativeCallback.swift",
+    "expect": "run",
+    "output": "PASS four C module imports",
+    "native": true
+  },
+  {
+    "id": "DoubleConsume",
+    "file": "DoubleConsume.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "'owner' consumed more than once"
+    ]
+  },
+  {
+    "id": "UseAfterConsume",
+    "file": "UseAfterConsume.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "'owner' used after consume"
+    ]
+  },
+  {
+    "id": "ConsumeBorrow",
+    "file": "ConsumeBorrow.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "'owner' is borrowed and cannot be consumed"
+    ]
+  },
+  {
+    "id": "CopyOwner",
+    "file": "CopyOwner.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "'copy' cannot be applied to noncopyable types"
+    ]
+  },
+  {
+    "id": "StoreSpan",
+    "file": "StoreSpan.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "stored property 'bytes'.*has non-Escapable type"
+    ]
+  },
+  {
+    "id": "EscapeSpan",
+    "file": "EscapeSpan.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "lifetime-dependent variable 'span' escapes its scope"
+    ]
+  },
+  {
+    "id": "CaptureSpan",
+    "file": "CaptureSpan.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "'bytes' cannot be captured by an escaping closure",
+      "lifetime-dependent variable 'bytes' escapes its scope"
+    ]
+  },
+  {
+    "id": "MutateBorrowedArray",
+    "file": "MutateBorrowedArray.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "overlapping accesses to 'bytes'"
+    ]
+  },
+  {
+    "id": "SendableCapture",
+    "file": "SendableCapture.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "capture of 'state' with non-Sendable type 'NativeState'"
+    ]
+  },
+  {
+    "id": "UncheckedPointer",
+    "file": "UncheckedPointer.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "expression uses unsafe constructs but is not marked with 'unsafe'"
+    ]
+  },
+  {
+    "id": "CustomLifetime",
+    "file": "CustomLifetime.swift",
+    "expect": "reject",
+    "diagnostics": [
+      "@lifetime.*only valid when experimental feature LifetimeDependence is enabled"
+    ]
+  }
+]

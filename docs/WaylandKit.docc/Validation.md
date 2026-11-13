@@ -8,7 +8,7 @@ The original repository contained README, license texts, ignore rules, and an em
 
 The initial uninitialized shell resolved `swift` to python-swiftclient 4.11.0. Rechecking after `source ~/.zshrc` resolves a shell function from `~/.zsh_config/_swift.zsh` that runs Swiftly. `swift --version` reports Swift 6.4.2 (swift-6.4.2-RELEASE), target x86_64-unknown-linux-gnu. Swiftly also provides DocC under its 6.4.2 toolchain. A standalone catalog conversion with `--warnings-as-errors` passed and generated all nine conceptual documentation pages; page titles and identifiers were checked in the archive JSON.
 
-No Swift language-feature compile probe, package build, runtime test, sanitizer run, benchmark, or visual documentation inspection has been performed. Successful DocC conversion validates conceptual article processing and references, not Swift example correctness or native memory safety.
+Phase 1 now includes executable Swift feature, ownership-reference, and native callback/ABI probes. See <doc:ToolchainValidation> for the exact matrix and evidence. These are isolated experiments rather than production wrapper tests. The actual x86_64 ownership runtime now builds and runs package tests as described in <doc:OwnershipRuntime>. Independent client/server peer interoperability, an instrumented libwayland run, benchmarks, and visual documentation inspection remain outstanding.
 
 ## Delivery gates
 
@@ -23,7 +23,7 @@ No Swift language-feature compile probe, package build, runtime test, sanitizer 
 | 6: optional and advanced APIs | Cursor, EGL, SHM, logging, utilities, legacy and unsafe paths | Complete native inventory and ownership audit |
 | 7: documentation and performance | DocC, tutorials, benchmark reports, soak tests | Documented thresholds and no unexplained regressions |
 
-No implementation is authorized by this document-only change. Later work should implement one independently verifiable phase at a time. Do not claim full coverage when only the client registry example works.
+Implementation is now authorized in stages. The current milestone implements the actual ownership runtime on x86_64. The user explicitly deferred aarch64 testing, so it remains tracked without blocking this milestone. Implement one independently verifiable phase at a time. Do not claim full coverage when only the client registry example works.
 
 ## Compile-time safety tests
 

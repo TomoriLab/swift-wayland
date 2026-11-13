@@ -76,20 +76,27 @@ Each tutorial includes complete buildable source, prerequisites, tested toolchai
 
 ## Documentation build and publication gate
 
-No Package.swift, DocC plugin, or symbol graph exists yet. The conceptual catalog has been converted successfully using DocC bundled with the installed Swiftly 6.4.2 toolchain. All nine pages were present in the resulting archive JSON, and `--warnings-as-errors` passed. The archive is a temporary validation artifact outside the repository; no generated output is committed. Visual inspection and Swift example compilation remain outstanding.
+The package now contains the actual WaylandRuntime target. Package-access symbol graphs are extracted with SwiftPM and combined with this catalog using bundled DocC; no DocC plugin dependency is installed. The current build renders 78 pages, including all 61 extracted runtime symbols. Every extracted symbol has a documentation comment. Symbol external IDs were checked against generated page metadata. Visual inspection remains outstanding.
 
-The verified local command, run from the repository root, is:
+The verified local workflow, run from the repository root, is:
 
 ```sh
 source ~/.zshrc
-/home/zeroday0619/.local/share/swiftly/bin/swiftly run docc convert docs/WaylandKit.docc \
-  --output-dir /mnt/HDD0/Documents/Codex/2026-11-13/sw/work/docc-check/WaylandKit.doccarchive \
-  --fallback-display-name WaylandKit \
+swift package dump-symbol-graph --minimum-access-level package
+mkdir -p .build/runtime-documentation
+"${SWIFTLY_BIN_DIR:-$HOME/.local/share/swiftly/bin}/swiftly" run docc convert docs/WaylandKit.docc \
+  --additional-symbol-graph-dir .build/out/symbolgraph \
+  --output-dir .build/runtime-documentation/WaylandRuntime.doccarchive \
+  --fallback-display-name WaylandRuntime \
   --fallback-bundle-identifier org.tomorilab.WaylandKit \
   --warnings-as-errors
 ```
 
-These absolute paths describe the verified local environment; future automation must resolve the selected toolchain and choose its own build-output directory. `docc` and `swiftc` need not be on the shell PATH merely because the `swift` shell function works; invoke additional tools through Swiftly. This DocC build does not support `docc --version`; use toolchain identity and supported help output rather than treating that unsupported option as evidence that DocC is absent. Configure symbol-graph generation and a SwiftPM DocC plugin only when implementation is authorized.
+The symbol graph path is the observed Swift 6.4.2 Swift Build output layout. Future build tooling must resolve the corresponding output path when using a different backend. The archive is ignored by Git. No generated archive is committed.
+
+The bundled DocC failed an internal precondition when the fallback display name was WaylandKit, matching the existing conceptual article. The same graph and catalog convert successfully with the fallback display name WaylandRuntime. Use the verified module name rather than the earlier standalone conceptual-catalog command. This is a documentation tool/configuration finding and does not change source API access levels.
+
+The original conceptual-only catalog had nine pages and was later extended to ten for toolchain validation. The current catalog includes a module documentation extension and requires the symbol graph in the command above. Swift source examples still require their own compilation checks; producing a page does not prove its example executes correctly.
 
 The intended pipeline is: build module → extract symbol graphs → compile DocC with warnings treated as errors → build tutorial examples → inspect landing pages, topic links, ownership tables, and unsafe warnings → publish a versioned static archive. The package phase may use `swift package generate-documentation` only after the corresponding plugin is explicitly present; it is not assumed to be a built-in command in the current repository.
 

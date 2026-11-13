@@ -1,10 +1,10 @@
 # WaylandKit design
 
-Status: proposed architecture, before implementation. Baseline date: 2026-11-13.
+Status: phase 2 ownership runtime implementation on x86_64 Linux; aarch64 validation is deferred by user instruction. Baseline date: 2026-11-13.
 
 WaylandKit will provide a memory-safe Swift interface to the complete public libwayland surface. Safety takes priority over avoiding a copy or preserving an unsafe C calling convention. Performance requirements are measured against an equivalent C program rather than assumed from the language or ownership model.
 
-The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on Linux x86_64 and aarch64. These are initial supported baselines, not claims of compatibility with every older library. Future public API additions require an inventory update. Swift 6.4.2 is an official release; after `source ~/.zshrc`, the shell function `swift` invokes Swiftly and reports Swift 6.4.2 targeting x86_64-unknown-linux-gnu. Without that shell initialization, PATH resolves the unrelated OpenStack python-swiftclient 4.11.0. DocC from the Swiftly 6.4.2 toolchain successfully converts the conceptual catalog with warnings treated as errors. Language examples and proposed build settings still require dedicated compile probes before implementation. [Swift 6.4.2 announcement](https://forums.swift.org/t/announcing-swift-6-4-2/90337), [Wayland releases](https://wayland.freedesktop.org/releases.html).
+The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on Linux x86_64 and aarch64. These are initial supported baselines, not claims of compatibility with every older library. Future public API additions require an inventory update. Swift 6.4.2 is an official release; after `source ~/.zshrc`, the shell function `swift` invokes Swiftly and reports Swift 6.4.2 targeting x86_64-unknown-linux-gnu. Without that shell initialization, PATH resolves the unrelated OpenStack python-swiftclient 4.11.0. DocC from the Swiftly 6.4.2 toolchain successfully converts the conceptual catalog with warnings treated as errors. Selected ownership, Span, concurrency, and native ABI patterns now have executable probes; broader production and aarch64 validation remain outstanding. [Swift 6.4.2 announcement](https://forums.swift.org/t/announcing-swift-6-4-2/90337), [Wayland releases](https://wayland.freedesktop.org/releases.html).
 
 ## Reading order
 
@@ -17,9 +17,11 @@ The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on
 7. [Validation and delivery](WaylandKit.docc/Validation.md): safety, leaks, performance, implementation gates.
 8. [Decision register](decisions.md): decisions, rejected alternatives, unresolved validation.
 9. [Memory-safety review](WaylandKit.docc/SafetyReview.md): ownership gaps, corrections, and remaining evidence gates.
-10. [C API inventory](reference/api-inventory.md) and [core protocol inventory](reference/core-protocol-inventory.md).
+10. [Swift toolchain validation](WaylandKit.docc/ToolchainValidation.md): executable capability and ownership probes.
+11. [Ownership runtime](WaylandKit.docc/OwnershipRuntime.md): implemented package-level contracts and runtime tests.
+12. [C API inventory](reference/api-inventory.md) and [core protocol inventory](reference/core-protocol-inventory.md).
 
-The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It currently contains conceptual articles only. Package targets, symbol graphs, executable examples, build plugins, and CI are intentionally not created in this design change. Conceptual catalog conversion generated nine documentation pages successfully. Symbol linking and compiled examples still require package targets and symbol graphs. The Markdown reference inventories are maintained alongside the catalog; future generated DocC reference pages will derive from the same manifest rather than duplicate hand-edited API lists.
+The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It currently contains conceptual articles only. The package now contains a WaylandRuntime target, C synchronization support, and Swift Testing coverage. Client/server application APIs, application examples, build plugins, and CI are not yet present. Isolated phase 1 compiler/ABI experiments remain under Tests/Toolchain and Scripts. The original conceptual catalog conversion generated nine documentation pages successfully; the toolchain results article extends the catalog. Symbol linking and compiled examples still require package targets and symbol graphs. The Markdown reference inventories are maintained alongside the catalog; future generated DocC reference pages will derive from the same manifest rather than duplicate hand-edited API lists.
 
 ## Acceptance contract
 

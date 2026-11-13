@@ -2,7 +2,7 @@
 
 A Swift-native interface to Wayland.
 
-WaylandKit is a library being designed to help Swift developers build Wayland clients and compositors on Linux. It aims to bring libwayland's capabilities to Swift through APIs that feel natural to Swift developers, with memory safety and clear resource ownership at the center of the design.
+WaylandKit is a library in early development to help Swift developers build Wayland clients and compositors on Linux. It aims to bring libwayland's capabilities to Swift through APIs that feel natural to Swift developers, with memory safety and clear resource ownership at the center of the design.
 
 The project is developed in this repository as `swift-wayland`.
 
@@ -15,7 +15,7 @@ The project is developed in this repository as `swift-wayland`.
 
 ## Project status
 
-WaylandKit is currently in the design phase. The repository contains architecture and safety specifications; an installable library and usage examples are not available yet.
+WaylandKit is in early development. Its ownership runtime is taking shape alongside compiler and interoperability tests. Wayland client/server APIs and application examples are not available yet.
 
 See the [design documentation](docs/README.md) for the proposed architecture, decisions, and development plan.
 
