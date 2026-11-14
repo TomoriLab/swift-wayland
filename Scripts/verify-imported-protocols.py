@@ -58,7 +58,8 @@ for source, protocol in zip(inputs[:2], model['inputs'], strict=True):
 (directory/'Package.swift').write_text('''// swift-tools-version: 6.4
 import PackageDescription
 let package = Package(name: "ImportedProtocolProbe", dependencies: [.package(path: '''+json.dumps(str(ROOT))+''')],
-    targets: [.target(name: "ImportedProtocolPeer", linkerSettings: [.linkedLibrary("wayland-server")]),
+    targets: [.systemLibrary(name: "ImportedWaylandServer", pkgConfig: "wayland-server"),
+              .target(name: "ImportedProtocolPeer", dependencies: ["ImportedWaylandServer"], linkerSettings: [.linkedLibrary("wayland-server")]),
               .executableTarget(name: "ImportedProtocolProbe", dependencies: ["ImportedProtocolPeer", .product(name: "WaylandProtocol", package: "swift-wayland"),
                                                                         .product(name: "WaylandClient", package: "swift-wayland"),
                                                                         .product(name: "WaylandServer", package: "swift-wayland"),
@@ -70,6 +71,10 @@ peer_sources = directory/'Sources/ImportedProtocolPeer'
 shutil.copyfile(ROOT/'Tests/ImportedProtocolPeer/ImportedProtocolPeer.c', peer_sources/'ImportedProtocolPeer.c')
 shutil.copyfile(ROOT/'Tests/ImportedProtocolPeer/include/ImportedProtocolPeer.h', peer_sources/'include/ImportedProtocolPeer.h')
 subprocess.run(['wayland-scanner', 'private-code', str(inputs[0]), str(peer_sources/'XdgShell.c')], check=True)
+native_system = directory/'Sources/ImportedWaylandServer'
+native_system.mkdir(parents=True, exist_ok=True)
+(native_system/'shim.h').write_text('#include <wayland-server.h>\n')
+(native_system/'module.modulemap').write_text('module ImportedWaylandServer [system] { header "shim.h" link "wayland-server" export * }\n')
 (sources/'Main.swift').write_text('''import WaylandProtocol
 import WaylandClient
 import ImportedProtocolPeer
@@ -166,7 +171,7 @@ print("{\\"interfaces\\":28,\\"bytes\\":\\(bundle.allocatedBytes),\\"pongs\\":1,
 }
 ''')
 environment = os.environ.copy()
-for name in ['LD_PRELOAD','LD_LIBRARY_PATH','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP']:environment.pop(name,None)
+for name in ['LD_PRELOAD','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP']:environment.pop(name,None)
 subprocess.run([str(swift),'build','--package-path',str(directory),'-Xswiftc','-warnings-as-errors'],env=environment,check=True)
 binary_directory = Path(subprocess.check_output([str(swift),'build','--package-path',str(directory),'--show-bin-path'],env=environment,text=True).strip())
 result = json.loads(subprocess.check_output([str(binary_directory/'ImportedProtocolProbe')],env=environment,text=True))

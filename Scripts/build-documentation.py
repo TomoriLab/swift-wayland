@@ -15,6 +15,15 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 MODULES = ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient', 'WaylandServer', 'WaylandCursor', 'WaylandEGL', 'WaylandUtilities', 'WaylandKit']
 
+def native_compiler_flags(environment):
+    # Swift Build's C API extraction does not inherit system-library search paths.
+    # Pass native flags explicitly so standalone header extraction uses the same baseline.
+    pkg_config_environment = environment | {'PKG_CONFIG_ALLOW_SYSTEM_CFLAGS': '1'}
+    native_flags = shlex.split(subprocess.check_output(
+        ['pkg-config', '--cflags', 'wayland-client', 'wayland-server', 'wayland-cursor', 'wayland-egl'],
+        env=pkg_config_environment, text=True))
+    return [argument for flag in native_flags for argument in ['-Xcc', flag]]
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hosting-base-path', help='Transform the merged archive for static hosting at this URL path; use an empty value for a domain root.')
@@ -35,12 +44,7 @@ def main():
                *[path for path in (ROOT/'Sources').rglob('*') if path.is_file()]]
         return {str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     hashes=input_snapshot()
-    # Swift Build's C API extraction does not inherit system-library search paths.
-    # Pass native flags explicitly so standalone header extraction uses the same baseline.
-    native_flags = shlex.split(subprocess.check_output(
-        ['pkg-config', '--cflags', 'wayland-client', 'wayland-server', 'wayland-cursor', 'wayland-egl'],
-        env=environment, text=True))
-    compiler_flags = [argument for flag in native_flags for argument in ['-Xcc', flag]]
+    compiler_flags = native_compiler_flags(environment)
     subprocess.run([str(swift), 'package', *compiler_flags, 'dump-symbol-graph', '--minimum-access-level', 'package'], cwd=ROOT, env=environment, check=True)
     graphs = ROOT / '.build/out/symbolgraph'
     report = {'inputs': hashes, 'modules': {}}
