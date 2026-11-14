@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -34,7 +35,13 @@ def main():
                *[path for path in (ROOT/'Sources').rglob('*') if path.is_file()]]
         return {str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     hashes=input_snapshot()
-    subprocess.run([str(swift), 'package', 'dump-symbol-graph', '--minimum-access-level', 'package'], cwd=ROOT, env=environment, check=True)
+    # Swift Build's C API extraction does not inherit system-library search paths.
+    # Pass native flags explicitly so standalone header extraction uses the same baseline.
+    native_flags = shlex.split(subprocess.check_output(
+        ['pkg-config', '--cflags', 'wayland-client', 'wayland-server', 'wayland-cursor', 'wayland-egl'],
+        env=environment, text=True))
+    compiler_flags = [argument for flag in native_flags for argument in ['-Xcc', flag]]
+    subprocess.run([str(swift), 'package', *compiler_flags, 'dump-symbol-graph', '--minimum-access-level', 'package'], cwd=ROOT, env=environment, check=True)
     graphs = ROOT / '.build/out/symbolgraph'
     report = {'inputs': hashes, 'modules': {}}
     archives = []

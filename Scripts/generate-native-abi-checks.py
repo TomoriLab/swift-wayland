@@ -39,7 +39,10 @@ for mapping in manifest['mappings']:
     probe_lines.append('    _ = MemoryLayout<'+native_type+'>.size')
 probe_lines.append('}')
 probe=probe_directory/'TypeSafetyProbe.swift';probe.write_text('\n'.join(probe_lines)+'\n')
-compiler=Path.home()/'.local/share/swiftly/toolchains/6.4.2/usr/bin/swiftc'
+toolchain_specification = importlib.util.spec_from_file_location('toolchain', ROOT/'Scripts/verify-toolchain.py')
+toolchain = importlib.util.module_from_spec(toolchain_specification)
+toolchain_specification.loader.exec_module(toolchain)
+compiler = toolchain.compiler_path(None)
 result=subprocess.run([str(compiler),'-swift-version','6','-strict-memory-safety','-warnings-as-errors','-parse-as-library',
                        '-I',str(probe_directory),'-Xcc','-I'+str(ROOT/'Sources/CWaylandRuntime/include'),'-emit-module','-module-name','NativeTypeSafetyProbe',str(probe),
                        '-o',str(probe_directory/'NativeTypeSafetyProbe.swiftmodule')],capture_output=True,text=True)
