@@ -22,12 +22,14 @@ COMMON_FLAGS = [
 
 
 def compiler_path(requested):
-    # The driver selects swiftc mode from argv[0], so retain the executable symlink name.
-    if requested:
-        return Path(requested).expanduser().absolute()
-    selected = os.environ.get("SWIFTC") or shutil.which("swiftc")
+    # Resolve launcher links to the toolchain directory, but invoke the swiftc entry
+    # point because the shared driver selects its mode from the executable name.
+    selected = requested or os.environ.get("SWIFTC") or shutil.which("swiftc")
     if selected:
-        return Path(selected).absolute()
+        compiler = Path(selected).expanduser().resolve().with_name("swiftc")
+        if not compiler.is_file():
+            raise RuntimeError("The selected toolchain has no swiftc entry point: " + str(compiler))
+        return compiler
     # This fallback avoids mistaking OpenStack's swift CLI for the Swift compiler.
     candidate = Path.home() / ".local/share/swiftly/toolchains/6.4.2/usr/bin/swiftc"
     if candidate.is_file():

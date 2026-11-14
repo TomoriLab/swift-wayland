@@ -35,6 +35,8 @@ jobs:
         with:
           name: waylandkit-documentation-diagnostics
           path: |
+            .build/setup-logs/
+            .build/native-*-build/meson-logs/
             .build/documentation/build.log
             .build/documentation/report.json
           include-hidden-files: true

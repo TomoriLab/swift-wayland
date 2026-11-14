@@ -23,6 +23,8 @@ jobs:
         with:
           name: waylandkit-x86_64-evidence
           path: |
+            .build/setup-logs/
+            .build/native-*-build/meson-logs/
             .build/validation/
             .build/toolchain-probes/
             .build/documentation/report.json

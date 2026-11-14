@@ -14,7 +14,8 @@ runs:
     - name: Build libwayland 1.26.0 and its scanner
       shell: bash
       run: |
-        python3 Scripts/build-instrumented-native.py --sanitizer none
+        mkdir -p .build/setup-logs
+        python3 Scripts/build-instrumented-native.py --sanitizer none 2>&1 | tee .build/setup-logs/native-build.log
         prefix="$GITHUB_WORKSPACE/.build/native-none-install"
         echo "$prefix/bin" >> "$GITHUB_PATH"
         echo "CPATH=$prefix/include" >> "$GITHUB_ENV"

@@ -37,6 +37,7 @@ def run(name,command):
         print((output/(name+'.log')).read_text(errors='replace'), flush=True)
         raise RuntimeError(name+' failed; inspect '+str(output/(name+'.log')))
     print('PASS',name,flush=True)
+run('toolchain-paths',['python3','Tests/Toolchain/test_compiler_path.py'])
 run('toolchain',['python3','Scripts/verify-toolchain.py'])
 for name in ['generate-protocol','generate-typed-protocol','generate-extension-fixtures','generate-native-interop','generate-native-abi-checks','generate-facade','generate-core-peer-tests','generate-core-server-tests','verify-api-coverage']:
     run(name,['python3','Scripts/'+name+'.py','--check'])

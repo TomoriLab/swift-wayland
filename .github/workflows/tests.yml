@@ -30,6 +30,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: waylandkit-tests-${{ matrix.configuration }}
-          path: .build/test-logs/
+          path: |
+            .build/test-logs/
+            .build/setup-logs/
+            .build/native-*-build/meson-logs/
           include-hidden-files: true
           retention-days: 14
