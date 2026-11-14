@@ -1,0 +1,59 @@
+#include <assert.h>
+#include <errno.h>
+#include <poll.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <time.h>
+#include <wayland-client.h>
+static int scenario, flushes, polls, ticks;
+int runtime_fault_get_fd(struct wl_display *display) { (void)display; return 123; }
+int runtime_fault_flush(struct wl_display *display)
+{
+    (void)display;
+    flushes++;
+    if (scenario == 0 && flushes == 1) { errno = EINTR; return -1; }
+    if ((scenario == 0 || scenario == 1) && flushes <= 2) { errno = EAGAIN; return -1; }
+    if (scenario == 5) { errno = EPIPE; return -1; }
+    return 0;
+}
+int runtime_fault_clock(clockid_t clock, struct timespec *time)
+{
+    (void)clock;
+    time->tv_sec = 0;
+    time->tv_nsec = ++ticks * 1000000;
+    return 0;
+}
+int runtime_fault_poll(struct pollfd *descriptors, nfds_t count, int timeout)
+{
+    assert(count == 2 && timeout >= 0);
+    polls++;
+    if (scenario == 0 && polls == 1) { errno = EINTR; return -1; }
+    if (scenario == 1 && polls == 1) {
+        assert(descriptors[0].events & POLLOUT);
+        descriptors[0].revents = POLLOUT;
+        return 1;
+    }
+    if (scenario == 2) { errno = EINTR; return -1; }
+    if (scenario == 3) return 0;
+    if (scenario == 4) { descriptors[1].revents = POLLIN; descriptors[0].revents = POLLIN; return 2; }
+    if (scenario == 6) { descriptors[0].revents = POLLNVAL; return 1; }
+    if (scenario == 7) { descriptors[1].revents = POLLNVAL; return 1; }
+    descriptors[0].revents = POLLIN;
+    return 1;
+}
+int wayland_kit_wait_readable(struct wl_display *, int, int, int *);
+int main(void)
+{
+    const int expected[] = { 1, 1, 0, 0, 2, -1, -1, -1 };
+    for (scenario = 0; scenario < 8; scenario++) {
+        flushes = polls = ticks = 0;
+        int error = 0;
+        int result = wayland_kit_wait_readable(NULL, 456, scenario == 2 ? 3 : 100, &error);
+        assert(result == expected[scenario]);
+        if (scenario == 0) assert(flushes >= 3 && polls == 2);
+        if (scenario == 1) assert(polls == 2);
+        if (scenario == 5) assert(error == EPIPE && polls == 0);
+        if (scenario == 6 || scenario == 7) assert(error == EBADF);
+    }
+    puts("PASS: 8 production wait-loop fault scenarios.");
+}

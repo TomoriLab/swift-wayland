@@ -8,7 +8,7 @@ The original repository contained README, license texts, ignore rules, and an em
 
 The initial uninitialized shell resolved `swift` to python-swiftclient 4.11.0. Rechecking after `source ~/.zshrc` resolves a shell function from `~/.zsh_config/_swift.zsh` that runs Swiftly. `swift --version` reports Swift 6.4.2 (swift-6.4.2-RELEASE), target x86_64-unknown-linux-gnu. Swiftly also provides DocC under its 6.4.2 toolchain. A standalone catalog conversion with `--warnings-as-errors` passed and generated all nine conceptual documentation pages; page titles and identifiers were checked in the archive JSON.
 
-Phase 1 now includes executable Swift feature, ownership-reference, and native callback/ABI probes. See <doc:ToolchainValidation> for the exact matrix and evidence. These are isolated experiments rather than production wrapper tests. The actual x86_64 ownership runtime now builds and runs package tests as described in <doc:OwnershipRuntime>. Independent C peer interoperability, isolated native instrumentation, and an exploratory dispatcher benchmark now exist. Full protocol/advanced-API interoperability, equivalent typed performance acceptance, and visual documentation inspection remain outstanding.
+Phase 1 now includes executable Swift feature, ownership-reference, and native callback/ABI probes. See <doc:ToolchainValidation> for the exact matrix and evidence. These are isolated experiments rather than production wrapper tests. The actual x86_64 ownership runtime now builds and runs package tests as described in <doc:OwnershipRuntime>. Independent C peer interoperability, isolated native instrumentation, and an exploratory dispatcher benchmark now exist. Core and advanced-API interoperability fixtures, full native mapping classification, equivalent typed measurements, and selected rendered DocC inspection now exist. The throughput acceptance target remains unmet; see <doc:ImplementationProgress> for current evidence and boundaries.
 
 ## Delivery gates
 
@@ -23,7 +23,7 @@ Phase 1 now includes executable Swift feature, ownership-reference, and native c
 | 6: optional and advanced APIs | Cursor, EGL, SHM, logging, utilities, legacy and unsafe paths | Complete native inventory and ownership audit |
 | 7: documentation and performance | DocC, tutorials, benchmark reports, soak tests | Documented thresholds and no unexplained regressions |
 
-Implementation is now authorized in stages. The current milestone implements the actual ownership runtime on x86_64. The user explicitly deferred aarch64 testing, so it remains tracked without blocking this milestone. Implement one independently verifiable phase at a time. Do not claim full coverage when only the client registry example works.
+Implementation is now authorized in stages. The current implementation spans the baseline client/server/protocol/runtime and advanced products on x86_64. The user explicitly deferred aarch64 testing, so it remains tracked without blocking this milestone. Implement one independently verifiable phase at a time. Do not claim full coverage when only the client registry example works.
 
 ## Compile-time safety tests
 
@@ -47,7 +47,7 @@ For each scenario, warm up once, repeat at least 10,000 connect/create/register/
 
 Require zero outstanding library-owned connection resources, registrations, read reservations, SHM references/accesses, and descriptors. Process-lifetime metadata and allocator/runtime caches must plateau after warm-up and have documented bounds. RSS alone is not leak evidence and a stable RSS alone is not proof of no leaks. Record tool output, toolchain, native library build, architecture, and any suppressions with a justification.
 
-Leak tests must include dropping a subscription token, native destruction before token release, throwing callback handlers, canceled async consumers, and invalidated child references outliving the display. Closure tests deliberately create a user ARC cycle and document how cancellation or weak capture breaks it; do not label this a library guarantee.
+Leak tests must include dropping a subscription token, native destruction before token release, throwing callback handlers, canceled async consumers, and invalidated child references outliving the display. Closure tests deliberately create a user ARC cycle and document how explicit root closure or weak capture breaks it; flag-only permanent-dispatcher cancellation does not release its native-reachable context; do not label this a library guarantee.
 
 ## Performance experiment design
 
@@ -57,21 +57,18 @@ Measure events/second, median/p95/p99 latency, CPU time, allocations per event, 
 
 Initial engineering budgets are hypotheses: no per-event heap allocation in the generated synchronous scalar path after setup; O(1) handle validation; no mandatory payload copy for verified immutable synchronous callback bytes (externally writable SHM excluded); and at most 10% median throughput loss relative to equivalent C for the selected hot-path fixtures. A 10% budget is a project target, not measured evidence. Report latency separately and revise budgets only with an explained review decision. Safety checks cannot be removed to meet a benchmark.
 
-## Planned commands after implementation
+## Implemented validation commands
 
-These are future verification commands, not commands run for this design:
+Run the complete configured x86_64 matrix from the repository root:
 
 ```sh
 source ~/.zshrc
-swift --version
-pkg-config --modversion wayland-client wayland-server wayland-cursor wayland-egl
-swift build -c release
-swift test
-swift test --sanitize=address
-swift test --sanitize=thread
+python3 Scripts/validate.py --native-sanitizers --soak --benchmark
 ```
 
-Exact feature flags, compile-fail harness, DocC command, instrumented native build, and benchmark command belong in phase 1 tooling once verified. Do not publish a command that requires an absent plugin or an unvalidated compiler option as an already working check.
+The script verifies the pinned toolchain before generation, compiler-rejection, native peer, failure-injection, Debug/Release, example, sanitizer, lifecycle, documentation, and performance checks. It preserves command logs and input hashes under .build/validation. Command completion is separate from acceptance: native baseline leaks, throughput budget failures, and missing performance coverage keep the aggregate result unsuccessful. See <doc:ContinuousIntegration> for prerequisites and targeted commands.
+
+For the ordinary Swift Testing suite, use `swift test --disable-xctest -Xswiftc -warnings-as-errors` and its `-c release` variant. Native lifetime validation uses `python3 Scripts/verify-instrumented-runtime.py --sanitizer address` and `--sanitizer thread` in separate runs with loader verification. These are the implemented harnesses; an uninstrumented native dependency does not establish native memory safety.
 
 ## Follow-up review acceptance matrix
 
@@ -85,6 +82,6 @@ Use distinct SHM pools on one thread, same-pool nested access, native resource d
 
 ## Current staged implementation
 
-The permanent proxy dispatcher and initial client/server slices now have native peer, cancellation, native cascade, and one-shot idle tests. Detailed commands and remaining gates are recorded in <doc:ClientAndServer>, <doc:OwnershipRuntime>, and <doc:ImplementationProgress>. Isolated native builds instrument client and server in separate ASan processes without disabling ODR checks, and together in a TSan process. A complete advanced API/fuzz/soak matrix is still required.
+The permanent proxy dispatcher and initial client/server slices now have native peer, cancellation, native cascade, and one-shot idle tests. Detailed commands and remaining gates are recorded in <doc:ClientAndServer>, <doc:OwnershipRuntime>, and <doc:ImplementationProgress>. Isolated native builds instrument client and server in separate ASan processes without disabling ODR checks, and together in a TSan process. The configured advanced API, XML fuzz, and 10,000-cycle soak checks have executed successfully. Their scope does not establish exhaustive native allocation failure coverage or remove the performance and native baseline leak gates.
 
 The first scalar observation experiment is recorded in <doc:DispatcherBenchmark>. It does not establish the equivalent generated typed-path budget or complete phase 7.

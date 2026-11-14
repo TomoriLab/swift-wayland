@@ -52,7 +52,7 @@ Installation runs inside a complete runtime native frame:
 1. Initialize the context storage and cancellation gate.
 2. Retain stable userdata with one explicit Unmanaged retain.
 3. Reserve a registration cleanup record with its prerequisite handles. Failure releases the provisional retained count without calling native install.
-4. Publish the weak checked cell before C can call synchronously.
+4. Publish the copied-identity destruction observer before C can call synchronously. Its weak control link avoids a context-to-root retention cycle; callback admission does not depend on a weak handle cell surviving.
 5. Invoke install. Success supplies detach. Partial failure supplies rollback; nil rollback asserts that no native consumer retained userdata.
 6. Store detach or rollback before propagating failure or observing reentrant root closure.
 7. Publish attachment authority only while its record remains valid. Otherwise owner fallback and frame exit execute the registered cleanup.

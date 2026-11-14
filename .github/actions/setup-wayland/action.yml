@@ -1,0 +1,31 @@
+name: Prepare WaylandKit toolchain
+description: Install Swift 6.4.2 and build the pinned libwayland in the workspace.
+runs:
+  using: composite
+  steps:
+    - uses: swift-actions/setup-swift@v3
+      with:
+        swift-version: '6.4.2'
+    - name: Install native build prerequisites
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y build-essential pkg-config meson ninja-build libffi-dev libexpat1-dev
+    - name: Build libwayland 1.26.0 and its scanner
+      shell: bash
+      run: |
+        python3 Scripts/build-instrumented-native.py --sanitizer none
+        prefix="$GITHUB_WORKSPACE/.build/native-none-install"
+        echo "$prefix/bin" >> "$GITHUB_PATH"
+        echo "CPATH=$prefix/include" >> "$GITHUB_ENV"
+        echo "LIBRARY_PATH=$prefix/lib" >> "$GITHUB_ENV"
+        echo "LD_LIBRARY_PATH=$prefix/lib" >> "$GITHUB_ENV"
+        echo "PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$prefix/share/pkgconfig" >> "$GITHUB_ENV"
+    - name: Verify compiler and native baseline
+      shell: bash
+      run: |
+        swift --version
+        python3 -c 'import json, subprocess; assert json.loads(subprocess.check_output(["swiftc", "-print-target-info"]))["compilerVersion"] == "Swift version 6.4.2 (swift-6.4.2-RELEASE)"'
+        test "$(pkg-config --modversion wayland-client)" = '1.26.0'
+        test "$(pkg-config --modversion wayland-server)" = '1.26.0'
+        wayland-scanner --version

@@ -19,7 +19,19 @@ The initial package-access slice uses native destroy watches and authoritative c
 
 - ``ServerIdleSource``
 
+### Typed core protocol
+
+- ``ServerInterface``
+- ``ServerObject``
+- ``ServerObjectReference``
+- ``ServerMessageReader``
+- ``ServerNewIdentifier``
+- ``ServerDynamicIdentifier``
+- ``ServerRequestSubscription``
+- ``ServerProtocolError``
+
 ### Contracts and verification
 
 - <doc:ClientAndServer>
+- <doc:TypedProtocol>
 - <doc:ImplementationProgress>

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Inventory native declarations, macros, and exports without claiming unmapped APIs are implemented."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -11,6 +12,10 @@ HEADERS = ['wayland-client.h', 'wayland-server.h', 'wayland-cursor.h', 'wayland-
 KINDS = {'FunctionDecl': 'function', 'TypedefDecl': 'type', 'RecordDecl': 'record',
          'EnumDecl': 'enum', 'EnumConstantDecl': 'enumMember', 'VarDecl': 'data'}
 MAPPINGS = {
+    'wl_proxy_marshal_array_flags': ('ClientObjectReference', 'TypedProtocol', 'TypedProtocolTests'),
+    'wl_resource_set_dispatcher': ('ServerObject.onRequest', 'TypedProtocol', 'TypedServerTests'),
+    'wl_resource_post_event_array': ('ServerObjectReference', 'TypedProtocol', 'TypedServerTests'),
+    'wl_client_post_implementation_error': ('ServerNewIdentifier', 'TypedProtocol', 'TypedServerTests'),
     'wl_proxy_add_dispatcher': ('ClientProxyDispatcher', 'ProxyDispatcher', 'ProxyDispatcherTests'),
     'wl_proxy_destroy': ('ProxyDispatcherOwner', 'ProxyDispatcher', 'ProxyDispatcherTests'),
     'wl_display_connect': ('ClientConnection', 'ClientAndServer', 'ClientConnectionTests'),
@@ -46,7 +51,28 @@ MAPPINGS = {
 def run(arguments):
     return subprocess.check_output(arguments, text=True)
 
+def protocol_tests(interface, direction, message):
+    interface_name = interface['name']
+    if interface_name in ['wl_display', 'wl_registry']:
+        paths = ['Tests/WaylandRuntimeTests/ClientConnectionTests.swift',
+                 'Tests/WaylandRuntimeTests/TypedProtocolTests.swift',
+                 'Tests/WaylandRuntimeTests/ServerGlobalTests.swift']
+        return {'boundary': 'Native-reserved implementation; independent C peer integration.', 'tests': paths}
+    name = ''.join(part[:1].upper() + part[1:] for part in (interface_name + '_' + message['name']).split('_'))
+    kind = 'Request' if direction == 'requests' else 'Event'
+    tests = []
+    for side in ['', 'Server']:
+        path = 'Tests/WaylandRuntimeTests/Core' + side + kind + 'WireTests.swift'
+        symbol = name + side + kind + 'Wire'
+        if 'func ' + symbol + '(' not in (ROOT / path).read_text():
+            raise RuntimeError('Missing generated message behavior test: ' + symbol)
+        tests.append({'file': path, 'test': symbol})
+    return {'boundary': 'Independent native C metadata, arguments, and ownership in both directions.', 'tests': tests}
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    arguments = parser.parse_args()
     directory = ROOT / '.build/native-inventory'
     directory.mkdir(parents=True, exist_ok=True)
     source = directory / 'headers.c'
@@ -86,17 +112,36 @@ def main():
             item['target'], article, test = mapping
             item['documentation'] = 'docs/WaylandKit.docc/' + article + '.md'
             item['tests'] = 'Tests/WaylandRuntimeTests/' + test + '.swift'
+    native_manifest = ROOT / 'docs/reference/native-interop-manifest.json'
+    compatibility = {mapping['id']: mapping for mapping in json.loads(native_manifest.read_text())['mappings']} if native_manifest.exists() else {}
+    for identity, item in items.items():
+        if identity not in compatibility:
+            continue
+        mapping = compatibility[identity]
+        item['compatibility'] = mapping
+        if item['status'] == 'unmapped':
+            item['status'] = mapping['status']
+            if mapping['status'] == 'unsafeABI':
+                item['documentation'] = mapping['documentation']
+                item['verification'] = ['Scripts/generate-native-interop.py --check',
+                                        'Scripts/generate-native-abi-checks.py --check',
+                                        'Tests/WaylandRuntimeTests/NativeCompatibilityTests.swift',
+                                        'Tests/WaylandRuntimeTests/NativeAdapterTests.swift']
     model = json.loads((ROOT / 'docs/reference/core-protocol-manifest.json').read_text())
     for interface in model['interfaces']:
         for direction in ['requests', 'events']:
             for message in interface[direction]:
                 identity = 'protocol.' + interface['name'] + '.' + direction + '.' + message['name']
-                # Schema presence is recorded separately from executable typed bindings.
                 items[identity] = {'id': identity, 'category': 'protocolMessage', 'name': identity,
-                                   'schemaGenerated': True, 'status': 'unmapped'}
+                                   'schemaGenerated': True, 'status': 'implemented',
+                                   'typedBindingGenerated': True,
+                                   'typedManifest': 'docs/reference/typed-core-bindings.json',
+                                   'typedDocumentation': 'docs/WaylandKit.docc/TypedProtocol.md',
+                                   'typedRuntimeCoverage': protocol_tests(interface, direction, message)}
     ordered = [items[key] for key in sorted(items)]
     counts = {category: sum(item['category'] == category for item in ordered) for category in sorted({item['category'] for item in ordered})}
     implemented = sum(item['status'] == 'implemented' for item in ordered)
+    classified = sum(item['status'] != 'unmapped' for item in ordered)
     include_directory = Path(run(['pkg-config', '--variable=includedir', 'wayland-client']).strip())
     header_names = re.findall(r'^## ([a-z-]+\.h)$', (ROOT / 'docs/reference/api-inventory.md').read_text(), re.M)
     header_hashes = {name: hashlib.sha256((include_directory / name).read_bytes()).hexdigest() for name in header_names}
@@ -104,10 +149,15 @@ def main():
                       if 'Copyright' in comment and 'Permission' in comment] for name in header_names}
     report = {'licenseNotices': {name: comments for name, comments in notices.items() if comments}, 'headers': header_hashes, 'baseline': {library: run(['pkg-config', '--modversion', library]).strip() for library in exports},
               'protocolHash': model['sha256'], 'categories': counts, 'total': len(ordered), 'implemented': implemented,
-              'releaseGatePassed': implemented == len(ordered), 'exports': exports, 'items': ordered}
+              'classified': classified, 'coverageGatePassed': classified == len(ordered),
+              'releaseGatePassed': False,
+              'remainingReleaseGates': ['Complete automated acceptance matrix', 'Equivalent typed workload performance', 'Rendered documentation review', 'Human review', 'Deferred aarch64 validation'], 'exports': exports, 'items': ordered}
     output = ROOT / 'docs/reference/native-api-coverage.json'
-    output.write_text(json.dumps(report, indent=2) + '\n')
-    print(json.dumps({key: report[key] for key in ['categories', 'total', 'implemented', 'releaseGatePassed']}, indent=2))
+    content = json.dumps(report, indent=2) + '\n'
+    if arguments.check:
+        if output.read_text() != content: raise RuntimeError('Native coverage output differs.')
+    else: output.write_text(content)
+    print(json.dumps({key: report[key] for key in ['categories', 'total', 'implemented', 'classified', 'coverageGatePassed', 'releaseGatePassed']}, indent=2))
 
 if __name__ == '__main__':
     main()

@@ -26,11 +26,11 @@
 //     SOFTWARE.
 
 /// Provides complete source-order metadata for the pinned core protocol.
-package enum CoreProtocol {
+public enum CoreProtocol {
     /// The exact SHA-256 of the source XML.
-    package static let sourceHash = "cc860987e54f8d85c940e97fa1270c69b6e4ad31fbcf5a7f00107ce1157f5e07"
+    public static let sourceHash = "cc860987e54f8d85c940e97fa1270c69b6e4ad31fbcf5a7f00107ce1157f5e07"
     /// All native interfaces in source order.
-    package static let interfaces: [ProtocolInterfaceSchema] = [wl_display, wl_registry, wl_callback, wl_compositor, wl_shm_pool, wl_shm, wl_buffer, wl_data_offer, wl_data_source, wl_data_device, wl_data_device_manager, wl_shell, wl_shell_surface, wl_surface, wl_seat, wl_pointer, wl_keyboard, wl_touch, wl_output, wl_region, wl_subcompositor, wl_subsurface, wl_fixes]
+    public static let interfaces: [ProtocolInterfaceSchema] = [wl_display, wl_registry, wl_callback, wl_compositor, wl_shm_pool, wl_shm, wl_buffer, wl_data_offer, wl_data_source, wl_data_device, wl_data_device_manager, wl_shell, wl_shell_surface, wl_surface, wl_seat, wl_pointer, wl_keyboard, wl_touch, wl_output, wl_region, wl_subcompositor, wl_subsurface, wl_fixes]
 
     private static let wl_display = ProtocolInterfaceSchema(
         name: "wl_display", version: 1,

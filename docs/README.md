@@ -2,9 +2,9 @@
 
 Status: ownership runtime with staged client/server and generator implementation on x86_64 Linux; aarch64 validation is deferred by user instruction. Baseline date: 2026-11-14.
 
-WaylandKit will provide a memory-safe Swift interface to the complete public libwayland surface. Safety takes priority over avoiding a copy or preserving an unsafe C calling convention. Performance requirements are measured against an equivalent C program rather than assumed from the language or ownership model.
+WaylandKit implements a Swift interface to the public libwayland surface with checked ownership and explicit unsafe compatibility boundaries. Safety takes priority over avoiding a copy or preserving an unsafe C calling convention. Performance requirements are measured against an equivalent C program rather than assumed from the language or ownership model.
 
-The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on Linux x86_64 and aarch64. These are initial supported baselines, not claims of compatibility with every older library. Future public API additions require an inventory update. Swift 6.4.2 is an official release; after `source ~/.zshrc`, the shell function `swift` invokes Swiftly and reports Swift 6.4.2 targeting x86_64-unknown-linux-gnu. Without that shell initialization, PATH resolves the unrelated OpenStack python-swiftclient 4.11.0. DocC from the Swiftly 6.4.2 toolchain successfully converts the conceptual catalog with warnings treated as errors. Selected ownership, Span, concurrency, and native ABI patterns now have executable probes; broader production and aarch64 validation remain outstanding. [Swift 6.4.2 announcement](https://forums.swift.org/t/announcing-swift-6-4-2/90337), [Wayland releases](https://wayland.freedesktop.org/releases.html).
+The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on Linux x86_64 and aarch64. These are initial supported baselines, not claims of compatibility with every older library. Future public API additions require an inventory update. Swift 6.4.2 is an official release; after `source ~/.zshrc`, the shell function `swift` invokes Swiftly and reports Swift 6.4.2 targeting x86_64-unknown-linux-gnu. Without that shell initialization, PATH resolves the unrelated OpenStack python-swiftclient 4.11.0. DocC from the Swiftly 6.4.2 toolchain converts the conceptual catalog and production symbol graphs with warnings treated as errors. Ownership, Span, concurrency, native ABI, and production API patterns have executable probes. Quantitative performance acceptance, native baseline leak findings, human review, and deferred aarch64 verification remain tracked separately. [Swift 6.4.2 announcement](https://forums.swift.org/t/announcing-swift-6-4-2/90337), [Wayland releases](https://wayland.freedesktop.org/releases.html).
 
 ## Reading order
 
@@ -25,7 +25,9 @@ The design targets Swift 6.4.2 in Swift 6 language mode and libwayland 1.26.0 on
 15. [Implementation progress](WaylandKit.docc/ImplementationProgress.md): completed work and remaining release gates.
 16. [C API inventory](reference/api-inventory.md) and [core protocol inventory](reference/core-protocol-inventory.md).
 
-The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It combines conceptual articles with package-access symbol graphs for WaylandRuntime, WaylandClient, WaylandServer, and WaylandProtocol. Independent C peer tests and the schema scanner exist; application-facing APIs, complete typed bindings, tutorials, and CI remain incomplete. The Markdown reference inventories and generated JSON coverage manifest remain adjacent to the catalog. See [ImplementationProgress](WaylandKit.docc/ImplementationProgress.md) before interpreting a generated schema or imported header as completed API coverage.
+The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). It combines conceptual articles and symbol graphs for the client-first facade, runtime, protocol, client, server, cursor, EGL, and utility products. Standalone consumer examples, native peers, generator checks, and a CI validation entry point are present. The Markdown reference inventories and generated JSON coverage manifests remain adjacent to the catalog. See [ImplementationProgress](WaylandKit.docc/ImplementationProgress.md) for current evidence and unresolved gates; a successful inventory or documentation build does not establish full acceptance.
+
+Typed core protocol bindings and their failure-path ownership contracts are documented in [TypedProtocol](WaylandKit.docc/TypedProtocol.md). Independent C peers exercise ordinary core requests and events in both directions. Native-reserved messages retain libwayland implementations with integration coverage. These checks cover wire representation and selected ownership failures, not every compositor protocol-state policy.
 
 ## Acceptance contract
 
@@ -40,6 +42,6 @@ The DocC catalog is rooted at [WaylandKit.docc](WaylandKit.docc/WaylandKit.md). 
 | No library-owned leaks | MathematicalModel; Validation | Balanced resource ledgers and clean repeated lifecycle tests |
 | Mathematical model | MathematicalModel | Traceable invariant IDs and model-derived tests |
 
-A design obligation is not a verified property. The current change establishes the obligations and the planned validation, not a proof that future code is memory-safe or leak-free. Human review is required before implementation changes are accepted.
+Design obligations and measured evidence remain distinct. The implementation has compiler, native peer, sanitizer, lifecycle, and documentation validation, while the throughput and native baseline leak gates remain unresolved. Human review is required before the changes are accepted.
 
 The 2026-11-13 follow-up review separates native attachments from subscriptions, native frames from callbacks, and cleanup records from reference cells. Safety obligations now cover M1–M19 and review scenarios SR1–SR18. Repository instructions are maintained in AGENTS.md.

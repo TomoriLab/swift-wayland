@@ -1,5 +1,5 @@
 /// Describes registration or subscription lifecycle failures.
-package enum CallbackContextError: Error, Equatable, Sendable {
+public enum CallbackContextError: Error, Equatable, Sendable {
     /// A registration can issue only one cancellation-owning subscription.
     case subscriptionAlreadyIssued
     /// Delivery was canceled before subscription publication.
@@ -7,7 +7,7 @@ package enum CallbackContextError: Error, Equatable, Sendable {
 }
 
 /// Returns handler failures as values so Swift errors never unwind through C.
-package enum CallbackDeliveryResult: Sendable {
+public enum CallbackDeliveryResult: Sendable {
     /// The handler returned normally.
     case delivered
     /// User delivery was canceled; native context remains attached.
@@ -24,24 +24,24 @@ package enum CallbackDeliveryResult: Sendable {
 /// asserts that no native consumer can call or retain that pointer. A successful
 /// detach must prevent future calls and quiesce concurrent native entry before
 /// returning. This API does not model a proxy listener with no removal operation.
-package enum CallbackInstallResult: ~Copyable {
+public enum CallbackInstallResult: ~Copyable {
     /// Transfers a nonthrowing, thread-compatible physical detach action.
     case installed(detach: () -> Void)
     /// Reports installation failure with optional cleanup of partial native attachment.
     case failed(any Error, rollback: (() -> Void)?)
 }
 
-private struct DeliveryState: Sendable {
+@usableFromInline struct DeliveryState: Sendable {
     var cancelled = false
     var subscriptionIssued = false
 }
 
 /// Stores only cancellation bits; it owns no context, runtime cell, or native pointer.
-final class CallbackDeliveryGate: Sendable {
-    private let state: RuntimeMutex<DeliveryState>
+@usableFromInline final class CallbackDeliveryGate: Sendable {
+    @usableFromInline let state: RuntimeMutex<DeliveryState>
     init() throws { state = try RuntimeMutex(DeliveryState()) }
-    func cancel() { state.withLock { $0.cancelled = true } }
-    var cancelled: Bool { state.withLock { $0.cancelled } }
+    func cancel() { state.withLock { $0.cancelled = true; state.setNotification(true) } }
+    @usableFromInline var cancelled: Bool { state.notificationPending }
     func issue() throws {
         try state.withLock { value in
             guard !value.subscriptionIssued else { throw CallbackContextError.subscriptionAlreadyIssued }
@@ -52,30 +52,30 @@ final class CallbackDeliveryGate: Sendable {
 }
 
 /// Allows thread-safe cancellation without transferring a native lifetime capability.
-package struct CallbackCancellation: Sendable {
+public struct CallbackCancellation: Sendable {
     let gate: CallbackDeliveryGate
     /// Stops future user delivery without detaching or freeing C userdata.
-    package func cancel() { gate.cancel() }
+    public func cancel() { gate.cancel() }
     /// Reports logical cancellation, independently of physical attachment lifetime.
-    package var isCancelled: Bool { gate.cancelled }
+    public var isCancelled: Bool { gate.cancelled }
 }
 
 /// Owns logical delivery cancellation, not physical C registration lifetime.
 ///
 /// Dropping or canceling this token leaves the stable native dispatcher attached.
 /// Its flag-only cancellation handle can cross tasks without retaining user data.
-package struct CallbackSubscription: ~Copyable {
+public struct CallbackSubscription: ~Copyable {
     /// Produces a copyable cancellation signal with no native resource access.
-    package let cancellation: CallbackCancellation
+    public let cancellation: CallbackCancellation
     /// Cancels delivery idempotently; an already admitted handler may finish.
-    package borrowing func cancel() { cancellation.cancel() }
+    public borrowing func cancel() { cancellation.cancel() }
     deinit { cancellation.cancel() }
 }
 
-final class CallbackStorage<Context: AnyObject> {
-    let gate: CallbackDeliveryGate
-    weak var cell: HandleCell?
-    var context: Context?
+@usableFromInline final class CallbackStorage<Context: AnyObject> {
+    @usableFromInline let gate: CallbackDeliveryGate
+    @usableFromInline var observer: NativeDestructionObserver?
+    @usableFromInline var context: Context?
     var detach: (() -> Void)?
 
     init(_ context: Context) throws {
@@ -100,7 +100,7 @@ final class CallbackStorage<Context: AnyObject> {
 /// captures are released after physical detach and outer native-frame quiescence.
 /// Thread-affine callbacks remain unsupported. Permanent proxy dispatchers use
 /// ProxyDispatcherOwner instead of this detachable registration.
-package struct CallbackAttachment<Context: AnyObject>: ~Copyable {
+public struct CallbackAttachment<Context: AnyObject>: ~Copyable {
     private let storage: CallbackStorage<Context>
     private let owner: OwnedHandle
 
@@ -110,28 +110,28 @@ package struct CallbackAttachment<Context: AnyObject>: ~Copyable {
     }
 
     /// Provides checked native-lifetime identity without exposing raw userdata.
-    package var lifetime: ObjectHandle { borrowing get { owner.reference } }
+    public var lifetime: ObjectHandle { borrowing get { owner.reference } }
     /// Provides a thread-safe delivery-only cancellation signal.
-    package var cancellation: CallbackCancellation {
+    public var cancellation: CallbackCancellation {
         borrowing get { CallbackCancellation(gate: storage.gate) }
     }
 
     /// Issues the sole RAII subscription; dropping it cancels only user delivery.
-    package borrowing func subscription() throws -> CallbackSubscription {
+    public borrowing func subscription() throws -> CallbackSubscription {
         try storage.gate.issue()
         return CallbackSubscription(cancellation: CallbackCancellation(gate: storage.gate))
     }
 
     /// Cancels delivery and requests physical detach through the cleanup record.
     @discardableResult
-    package borrowing func requestClose() -> CloseProgress {
+    public borrowing func requestClose() -> CloseProgress {
         storage.gate.cancel()
         return owner.requestClose()
     }
 
     /// Consumes attachment authority; active native frames defer physical detach.
     @discardableResult
-    package consuming func close() -> CloseProgress {
+    public consuming func close() -> CloseProgress {
         storage.gate.cancel()
         return owner.requestClose()
     }
@@ -148,16 +148,16 @@ package struct CallbackAttachment<Context: AnyObject>: ~Copyable {
     /// Handler errors become values; no thrown error crosses the C boundary.
     /// Owned event payloads must remain in the trampoline's RAII scope even when
     /// delivery is canceled, unavailable, or failed.
-    @unsafe package static func deliver(
+    @unsafe public static func deliver(
         userData: UnsafeMutableRawPointer?, _ body: (Context) throws -> Void
     ) -> CallbackDeliveryResult {
         guard let userData = unsafe userData else { return .unavailable }
         // Native attachment owns one retained count until detach and quiescence complete.
         let storage = unsafe Unmanaged<CallbackStorage<Context>>.fromOpaque(userData).takeUnretainedValue()
         if storage.gate.cancelled { return .cancelled }
-        guard let cell = storage.cell else { return .unavailable }
+        guard let observer = storage.observer else { return .unavailable }
         do {
-            return try cell.control.withCallbackFrame(cell) {
+            return try observer.withCallback {
                 if storage.gate.cancelled { return .cancelled }
                 guard let context = storage.context else { return .unavailable }
                 do {
@@ -182,7 +182,7 @@ extension OwnershipSession {
     /// must avoid unsynchronized external mutation and user-created ARC cycles.
     ///
     /// - Throws: An installation error or a runtime allocation/state error.
-    @unsafe package borrowing func attachCallback<Context: AnyObject>(
+    @unsafe public borrowing func attachCallback<Context: AnyObject>(
         context: Context,
         dependencies: [ObjectHandle] = [],
         install: (UnsafeMutableRawPointer) -> CallbackInstallResult
@@ -201,7 +201,7 @@ extension OwnershipSession {
                 unsafe Unmanaged<CallbackStorage<Context>>.fromOpaque(pointer).release()
                 throw error
             }
-            storage.cell = owner.reference.cell
+            storage.observer = owner.reference.destructionObserver()
             guard owner.reference.isValid else { throw OwnershipError.closedSession }
             let result = unsafe install(pointer)
             switch consume result {

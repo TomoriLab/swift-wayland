@@ -2,9 +2,11 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 
 struct wayland_runtime_mutex {
     pthread_mutex_t value;
+    _Atomic int notification;
 };
 
 struct wayland_runtime_mutex *wayland_runtime_mutex_create(int *error)
@@ -19,6 +21,7 @@ struct wayland_runtime_mutex *wayland_runtime_mutex_create(int *error)
         free(mutex);
         return NULL;
     }
+    atomic_init(&mutex->notification, 0);
     return mutex;
 }
 
@@ -52,3 +55,24 @@ uint64_t wayland_runtime_next_session(void)
         abort();
     return result;
 }
+
+static _Thread_local struct wayland_runtime_mutex *native_frame;
+struct wayland_runtime_mutex *wayland_runtime_native_frame_enter(struct wayland_runtime_mutex *mutex)
+{
+    struct wayland_runtime_mutex *previous = native_frame;
+    native_frame = mutex;
+    return previous;
+}
+void wayland_runtime_native_frame_leave(struct wayland_runtime_mutex *previous) { native_frame = previous; }
+int wayland_runtime_native_frame_matches(struct wayland_runtime_mutex *mutex) { return native_frame == mutex; }
+int wayland_runtime_native_frame_uninterrupted(struct wayland_runtime_mutex *mutex)
+{
+    return native_frame == mutex && !atomic_load(&mutex->notification);
+}
+int wayland_runtime_callback_state(struct wayland_runtime_mutex *admission, struct wayland_runtime_mutex *cancellation)
+{
+    if (native_frame != admission || atomic_load(&admission->notification)) return 0;
+    return atomic_load(&cancellation->notification) ? 2 : 1;
+}
+int wayland_runtime_notification_pending(struct wayland_runtime_mutex *mutex) { return atomic_load(&mutex->notification); }
+void wayland_runtime_notification_set(struct wayland_runtime_mutex *mutex, int pending) { atomic_store(&mutex->notification, pending); }

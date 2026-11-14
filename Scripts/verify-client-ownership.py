@@ -21,10 +21,20 @@ def main():
     (output / 'report.json').write_text(json.dumps({'passed': False, 'status': 'building'}) + '\n')
     environment = os.environ.copy()
     for name in ['CC', 'CXX', 'CPP', 'LD', 'AR', 'NM', 'RANLIB', 'STRIP']: environment.pop(name, None)
-    (output / 'module.modulemap').write_text('\n'.join('module ' + name + ' { header ' + json.dumps(str(ROOT / 'Sources' / name / 'include' / (name + '.h'))) + ' export * }' for name in ['CWaylandRuntime', 'CWaylandClient']) + '\n')
+    (output / 'module.modulemap').write_text('\n'.join('module ' + name + ' { header ' + json.dumps(str(ROOT / 'Sources' / name / 'include' / (name + '.h'))) + ' export * }' for name in ['CWaylandRuntime', 'CWaylandClient', 'CWaylandProtocol', 'CWaylandServer', 'CWaylandCursor', 'CWaylandEGL', 'CWaylandUtilities']) + '\n')
     fixtures = ROOT / 'Tests/ClientCompileChecks'
-    patterns = {'Accepted': None, 'CopyRead': "'copy' cannot be applied to noncopyable types",
-                'EscapeRead': 'borrowed|borrowing', 'SendConnection': "non-Sendable type 'ClientConnection'"}
+    patterns = {'Accepted': None, 'UnsafeDescriptorBorrow': "not marked with 'unsafe'", 'SendDescriptorBundle': "non-Sendable type 'ProtocolDescriptorBundle'", 'AdvancedAccepted': None, 'DestroyRegistryReference': 'cannot convert value', 'UnsafeThemeLoad': "not marked with 'unsafe'", 'CopyRead': "'copy' cannot be applied to noncopyable types",
+                'EscapeRead': 'borrowed|borrowing', 'SendConnection': "non-Sendable type 'ClientConnection'",
+                'CopyTypedOwner': "'copy' cannot be applied to noncopyable types",
+                'DestroyTypedReference': "requires the types|has no member",
+                'CopyTypedEvent': "'copy' cannot be applied to noncopyable types",
+                'WrongTypedObject': "cannot convert value",
+                'CopyServerConstructor': "'copy' cannot be applied to noncopyable types",
+                'CopyServerRequest': "'copy' cannot be applied to noncopyable types",
+                'WrongSourceOperation': "requires the types|incorrect argument label|extra argument",
+                'EscapeClientReader': "missing reinitialization|borrowed|consumed",
+                'EscapeServerReader': "escaping closure captures.*inout",
+                'UnacknowledgedNativeABI': "not marked with 'unsafe'"}
     assert {path.stem for path in fixtures.glob('*.swift')} == patterns.keys()
     inputs = [Path(__file__), ROOT / 'Scripts/verify-toolchain.py', *(ROOT / 'Sources').rglob('*.swift'),
               *(ROOT / 'Sources').rglob('*.h'), *(ROOT / 'Sources').rglob('*.c'), *fixtures.glob('*.swift')]
@@ -33,8 +43,8 @@ def main():
     for configuration, optimization in [('debug', '-Onone'), ('release', '-O')]:
         directory = output / configuration
         directory.mkdir(exist_ok=True)
-        flags = [*toolchain.COMMON_FLAGS, optimization, '-package-name', 'swift_wayland', '-I', output, '-I', directory]
-        for module in ['WaylandRuntime', 'WaylandClient']:
+        flags = [*toolchain.COMMON_FLAGS, optimization, '-package-name', 'swift_wayland', '-I', output, '-I', directory, '-Xcc', '-I' + str(ROOT / 'Sources/CWaylandRuntime/include')]
+        for module in ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient', 'WaylandServer', 'WaylandCursor', 'WaylandEGL', 'WaylandUtilities']:
             compilation = toolchain.invoke([compiler, *flags, '-emit-module', '-module-name', module,
                 *sorted((ROOT / 'Sources' / module).glob('*.swift')), '-o', directory / (module + '.swiftmodule')], environment)
             toolchain.require_success(compilation)

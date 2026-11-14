@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build an isolated, instrumented libwayland 1.26.0 without changing the host installation."""
+"""Build an isolated libwayland 1.26.0 with optional instrumentation."""
 import argparse
 import hashlib
 import importlib.util
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -17,7 +18,8 @@ URL = 'https://gitlab.freedesktop.org/wayland/wayland/-/archive/1.26.0/wayland-1
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--sanitizer', choices=['address', 'thread'], required=True)
+    parser.add_argument('--sanitizer', choices=['none', 'address', 'thread'], required=True)
+    parser.add_argument('--pending-constructor-fix', action='store_true', help='Apply the local native ownership candidate only to an isolated build.')
     arguments = parser.parse_args()
     specification = importlib.util.spec_from_file_location('toolchain', ROOT / 'Scripts/verify-toolchain.py')
     toolchain = importlib.util.module_from_spec(specification)
@@ -44,8 +46,16 @@ def main():
                     raise RuntimeError('Extracted native source differs from the pinned archive: ' + member.name)
     if (source / 'protocol/wayland.xml').read_bytes() != (ROOT / 'Protocols/wayland.xml').read_bytes():
         raise RuntimeError('Native protocol differs from the checked-in schema baseline.')
-    build = ROOT / ('.build/native-' + arguments.sanitizer + '-build')
-    prefix = ROOT / ('.build/native-' + arguments.sanitizer + '-install')
+    suffix = '-pending' if arguments.pending_constructor_fix else ''
+    if arguments.pending_constructor_fix:
+        replacement = ROOT/'.build/native-pending-source/wayland-1.26.0'
+        if replacement.exists(): shutil.rmtree(replacement)
+        replacement.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source, replacement)
+        subprocess.run(['patch','--batch','--forward','-p1','-i',str(ROOT/'Patches/libwayland-1.26.0-pending-proxy-ownership.patch')], cwd=replacement, check=True)
+        source = replacement
+    build = ROOT / ('.build/native-' + arguments.sanitizer + suffix + '-build')
+    prefix = ROOT / ('.build/native-' + arguments.sanitizer + suffix + '-install')
     environment = os.environ.copy()
     environment['CC'] = str(compiler)
     environment.pop('CFLAGS', None)
@@ -55,7 +65,7 @@ def main():
         runtime = compiler.parent.parent / 'lib/swift/linux'
         environment['LDFLAGS'] = '-L' + str(runtime) + ' -Wl,-rpath,' + str(runtime) + ' -ldispatch -lBlocksRuntime'
     command = ['meson', 'setup', str(build), str(source), '--prefix', str(prefix), '--libdir', 'lib',
-               '-Dscanner=false', '-Dtests=false', '-Ddocumentation=false', '-Ddtd_validation=false',
+               '-Dscanner=' + ('true' if arguments.sanitizer == 'none' else 'false'), '-Dtests=false', '-Ddocumentation=false', '-Ddtd_validation=false',
                '-Db_sanitize=' + arguments.sanitizer, '-Db_lundef=false']
     if (build / 'meson-private/coredata.dat').exists(): command.append('--reconfigure')
     subprocess.run(command, env=environment, check=True)

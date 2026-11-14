@@ -1,0 +1,34 @@
+name: WaylandKit validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: waylandkit-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  x86_64:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-wayland
+      - name: Verify the pinned implementation and native libraries
+        run: python3 Scripts/validate.py --native-sanitizers --soak --benchmark
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylandkit-x86_64-evidence
+          path: |
+            .build/validation/
+            .build/documentation/report.json
+            .build/examples-report.json
+            .build/typed-benchmark.json
+            .build/protocol-fuzz.json
+            .build/shm-faults/
+            .build/native-*-verification.json
+            .build/proxy-*.log
+          retention-days: 14

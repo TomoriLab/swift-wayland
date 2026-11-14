@@ -9,6 +9,11 @@ int wayland_kit_install_dispatcher(struct wl_proxy *proxy, wayland_kit_dispatche
     return wl_proxy_add_dispatcher(proxy, dispatcher, context, context);
 }
 
+int wayland_kit_install_dispatcher_with_implementation(struct wl_proxy *proxy, wayland_kit_dispatcher dispatcher, void *implementation, void *context)
+{
+    return wl_proxy_add_dispatcher(proxy, dispatcher, implementation, context);
+}
+
 void wayland_kit_discard_event(const struct wl_message *message, union wl_argument *arguments)
 {
     const char *signature = message->signature;
@@ -79,4 +84,22 @@ struct wl_proxy *wayland_kit_sync_on_queue(struct wl_display *display, struct wl
     wl_proxy_wrapper_destroy(wrapper);
     errno = error;
     return (struct wl_proxy *)callback;
+}
+
+void wayland_kit_discard_unclaimed(const struct wl_message *message, union wl_argument *arguments, uint32_t claimed)
+{
+    const char *signature = message->signature;
+    unsigned index = 0;
+    for (; *signature; signature++) {
+        if ((*signature >= '0' && *signature <= '9') || *signature == '?') continue;
+        if (*signature == 'h' && arguments[index].h >= 0) { close(arguments[index].h); arguments[index].h = -1; }
+        else if (*signature == 'n' && arguments[index].o && !(claimed & (1u << index)))
+            wl_proxy_destroy((struct wl_proxy *)arguments[index].o);
+        index++;
+    }
+}
+
+void wayland_kit_shell_surface_resize(struct wl_shell_surface *surface, struct wl_seat *seat, uint32_t serial, uint32_t edges)
+{
+    wl_shell_surface_resize(surface, seat, serial, edges);
 }

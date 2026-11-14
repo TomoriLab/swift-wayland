@@ -2,6 +2,7 @@ import Glibc
 import Testing
 import RuntimeNativeTestSupport
 import WaylandClient
+import WaylandProtocol
 import WaylandRuntime
 
 private final class ClientEvents {
@@ -9,6 +10,31 @@ private final class ClientEvents {
 }
 
 extension DescriptorAndCallbackTests {
+    @Test func combinedReadAndDispatchPreservesPendingAndCloseSemantics() throws {
+        var descriptor: Int32 = -1
+        let server = unsafe try #require(runtime_test_server_create(&descriptor))
+        defer { unsafe runtime_test_server_destroy(server) }
+        let connection = unsafe try ClientConnection(receiving: descriptor)
+        let events = ClientEvents()
+        let registry = try connection.registry(context: events) { events, event in events.events.append(event) }
+        try connection.flush()
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        try connection.withPreparedRead { try $0.read() }
+        #expect(throws: ClientCoordinationError.eventsPending) { try connection.readAndDispatchPending() }
+        #expect(try connection.dispatchPending() > 0)
+        #expect(events.events.contains { $0.name == "global" })
+        let sync = try connection.sync(context: events) { events, event in events.events.append(event) }
+        try connection.flush()
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        #expect(try connection.readAndDispatchPending() > 0)
+        #expect(events.events.contains { $0.name == "done" })
+        connection.requestClose()
+        #expect(throws: OwnershipError.closedSession) { try connection.readAndDispatchPending() }
+        withExtendedLifetime(registry) {}
+        withExtendedLifetime(sync) {}
+        #expect(try connection.snapshot().retainedRecords == 0)
+    }
+
     @Test func clientRegistryAndSyncInteroperateWithIndependentCServer() throws {
         var descriptor: Int32 = -1
         let server = unsafe try #require(runtime_test_server_create(&descriptor))
@@ -148,5 +174,101 @@ extension DescriptorAndCallbackTests {
             group.wait()
             #expect(cancellation.isCancelled)
         }
+    }
+}
+
+extension DescriptorAndCallbackTests {
+    @Test func namedSocketConnectionUsesNativeLookupAndShutdown() throws {
+        var descriptor: Int32 = -1
+        let server = unsafe try #require(runtime_test_server_create(&descriptor))
+        defer { unsafe runtime_test_server_destroy(server) }
+        _ = Glibc.close(descriptor)
+        var directory = Array("/tmp/waylandkit-XXXXXX".utf8CString)
+        let path = try directory.withUnsafeMutableBufferPointer { bytes in
+            guard let pointer = unsafe mkdtemp(bytes.baseAddress!) else { throw ClientError.nativeFailure(errno) }
+            return unsafe String(cString: pointer)
+        } + "/wayland"
+        defer { path.withCString { _ = unsafe unlink($0) }; String(path.dropLast(8)).withCString { _ = unsafe rmdir($0) } }
+        let listening = path.withCString { unsafe runtime_test_server_listen(server, $0) }
+        #expect(listening == 0)
+        let connection = try ClientConnection(name: path)
+        let events = ClientEvents()
+        let registry = try connection.registry(context: events) { events, event in events.events.append(event) }
+        try connection.flush()
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        try connection.withPreparedRead { try $0.read() }
+        _ = try connection.dispatchPending()
+        #expect(!events.events.isEmpty && registry.lifetime.isValid)
+        connection.requestClose()
+        #expect(try connection.snapshot().retainedRecords == 0)
+    }
+
+    @Test func protocolErrorSnapshotSurvivesDisplayShutdown() throws {
+        var descriptor: Int32 = -1
+        let server = unsafe try #require(runtime_test_server_create(&descriptor))
+        defer { unsafe runtime_test_server_destroy(server) }
+        let connection = unsafe try ClientConnection(receiving: descriptor)
+        #expect(try connection.protocolError() == nil)
+        let registry = try connection.protocolDisplay().getRegistry()
+        let compositor = try registry.reference.bind(name: 1, as: WlCompositor.self, version: 1, advertisedVersion: 1)
+        let identifier = try compositor.reference.identifier()
+        try connection.flush()
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        unsafe runtime_test_server_protocol_error(server, identifier)
+        try connection.withPreparedRead { try $0.read() }
+        #expect(throws: (any Error).self) { try connection.dispatchPending() }
+        let error = try connection.protocolError()
+        let snapshot = try #require(error)
+        #expect(snapshot.interfaceName == "wl_compositor" && snapshot.objectIdentifier == identifier && snapshot.code == 42)
+        connection.requestClose()
+        #expect(snapshot.code == 42)
+        #expect(throws: OwnershipError.closedSession) { try connection.protocolError() }
+    }
+}
+
+extension DescriptorAndCallbackTests {
+    @Test func resolvedOuterReadCannotCancelOrConsumeNewerNestedReservation() throws {
+        var descriptor: Int32 = -1
+        let server = unsafe try #require(runtime_test_server_create(&descriptor))
+        defer { unsafe runtime_test_server_destroy(server) }
+        let connection = unsafe try ClientConnection(receiving: descriptor)
+        try connection.withPreparedRead { outer in
+            outer.cancel()
+            try connection.withPreparedRead { inner in
+                outer.cancel()
+                #expect(outer.isResolved && !inner.isResolved)
+                #expect(throws: ClientCoordinationError.reservationResolved) { try outer.read() }
+                let innerStillUnresolved = !inner.isResolved
+                #expect(innerStillUnresolved)
+                inner.cancel()
+            }
+        }
+        connection.requestClose()
+        #expect(try connection.snapshot().retainedRecords == 0)
+    }
+}
+
+extension DescriptorAndCallbackTests {
+    @Test func pendingManagedQueuePreventsReadingThroughAnEmptyDefaultQueue() throws {
+        var descriptor: Int32 = -1
+        let server = unsafe try #require(runtime_test_server_create(&descriptor))
+        defer { unsafe runtime_test_server_destroy(server) }
+        let connection = unsafe try ClientConnection(receiving: descriptor)
+        let queue = try connection.createQueue()
+        let events = ClientEvents()
+        let proxy = try connection.sync(on: queue, context: events) { events, event in events.events.append(event) }
+        try connection.flush()
+        #expect(unsafe runtime_test_server_dispatch(server) == 0)
+        try connection.withPreparedRead { try $0.read() }
+        #expect(try connection.dispatchPending() >= 0)
+        #expect(try connection.dispatchPending() == 0)
+        #expect(throws: ClientCoordinationError.eventsPending) { try connection.withPreparedRead { _ in } }
+        #expect(events.events.isEmpty)
+        #expect(try connection.dispatchPending(on: queue) == 1)
+        try connection.withPreparedRead { _ in }
+        withExtendedLifetime(proxy) {}
+        connection.requestClose()
+        #expect(try connection.snapshot().retainedRecords == 0)
     }
 }

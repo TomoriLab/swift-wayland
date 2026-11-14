@@ -278,11 +278,7 @@ struct runtime_test_server {
     struct wl_client *client;
     struct wl_global *global;
 };
-static void bind_test_compositor(struct wl_client *client, void *data, uint32_t version, uint32_t identifier)
-{
-    (void)data;
-    if (!wl_resource_create(client, &wl_compositor_interface, (int)version, identifier)) abort();
-}
+void bind_test_compositor(struct wl_client *, void *, uint32_t, uint32_t);
 struct runtime_test_server *runtime_test_server_create(int *client_descriptor)
 {
     int sockets[2];
@@ -388,4 +384,58 @@ double runtime_test_c_benchmark(unsigned iterations)
     wl_proxy_destroy(proxy);
     runtime_test_peer_destroy(peer);
     return (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1000000000.0;
+}
+
+void runtime_test_server_protocol_error(struct runtime_test_server *server, uint32_t identifier)
+{
+    struct wl_resource *resource = wl_client_get_object(server->client, identifier);
+    assert(resource);
+    wl_resource_post_error(resource, 42, "%s", "Independent peer rejection.");
+    wl_client_flush(server->client);
+}
+
+int runtime_test_descriptor_write_one(int descriptor) { return (int)write(descriptor, "x", 1); }
+int runtime_test_descriptor_read_one(int descriptor) { char byte; return (int)read(descriptor, &byte, 1); }
+
+void runtime_test_client_destroy_resource(struct wl_client *client, uint32_t identifier)
+{
+    struct wl_resource *resource = wl_client_get_object(client, identifier);
+    assert(resource);
+    wl_resource_destroy(resource);
+}
+
+int runtime_test_peer_generate_log(struct runtime_test_peer *peer)
+{
+    static void (*listener[3])(void) = { 0 };
+    struct wl_proxy *proxy = runtime_test_peer_proxy(peer);
+    assert(wl_proxy_add_listener(proxy, listener, NULL) == 0);
+    int result = wl_proxy_add_listener(proxy, listener, NULL);
+    wl_proxy_destroy(proxy);
+    return result;
+}
+int runtime_test_server_generate_log(struct runtime_test_server *server)
+{
+    return wl_global_create(server->display, &wl_compositor_interface, wl_compositor_interface.version + 1, NULL, bind_test_compositor) == NULL;
+}
+struct wl_list *runtime_test_server_clients(struct runtime_test_server *server) { return wl_display_get_client_list(server->display); }
+int runtime_test_server_initialize_shm(struct runtime_test_server *server)
+{
+    return wl_display_init_shm(server->display);
+}
+void runtime_test_trigger_server_log(void)
+{
+    struct wl_display *display = wl_display_create();
+    assert(display);
+    assert(wl_global_create(display, &wl_compositor_interface, wl_compositor_interface.version + 1, NULL, bind_test_compositor) == NULL);
+    wl_display_destroy(display);
+}
+int runtime_test_live_descriptor_count(void)
+{
+    DIR *directory = opendir("/proc/self/fd");
+    if (!directory) return -1;
+    int count = 0;
+    struct dirent *entry;
+    while ((entry = readdir(directory))) if (entry->d_name[0] != '.') count++;
+    closedir(directory);
+    return count;
 }

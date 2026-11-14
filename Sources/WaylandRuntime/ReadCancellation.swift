@@ -11,18 +11,18 @@ private struct ReadCancellationState: Sendable {
 /// No native display capability crosses threads. The wake descriptor remains
 /// owned until the last signal, waiter, and active method release this object.
 /// Cancellation is permanent and never closes the borrowed display transport.
-package final class ReadCancellation: Sendable {
+public final class ReadCancellation: Sendable {
     private let state: RuntimeMutex<ReadCancellationState>
 
     /// Allocates a nonblocking close-on-exec eventfd and its synchronized state.
-    package init() throws {
+    public init() throws {
         let descriptor = wayland_runtime_wake_create()
         guard descriptor >= 0 else { throw OwnershipError.synchronizationUnavailable(errno) }
         do { state = try RuntimeMutex(ReadCancellationState(descriptor: descriptor)) }
         catch { _ = Glibc.close(descriptor); throw error }
     }
     /// Signals cancellation once; late signals retain their own wake resource lifetime.
-    package func cancel() {
+    public func cancel() {
         state.withLock { value in
             guard !value.cancelled else { return }
             value.cancelled = true
@@ -35,12 +35,12 @@ package final class ReadCancellation: Sendable {
         }
     }
     /// Reports the synchronized cancellation bit without native resource access.
-    package var isCancelled: Bool { state.withLock { $0.cancelled } }
+    public var isCancelled: Bool { state.withLock { $0.cancelled } }
 
     /// Borrows the wake number for synchronous polling while retaining this object.
     ///
     /// The caller must never close, read, store, or transfer this descriptor.
-    @unsafe package func withUnsafeWakeDescriptor<Result: ~Copyable>(_ body: (Int32) throws -> Result) rethrows -> Result {
+    @unsafe public func withUnsafeWakeDescriptor<Result: ~Copyable>(_ body: (Int32) throws -> Result) rethrows -> Result {
         defer { withExtendedLifetime(self) {} }
         return try body(state.withLock { $0.descriptor })
     }

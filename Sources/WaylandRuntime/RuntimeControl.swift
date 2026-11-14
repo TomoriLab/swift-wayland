@@ -18,17 +18,21 @@ private final class CleanupRecord {
     let identity: HandleIdentity
     let dependencies: Set<UInt64>
     var dependents: Set<UInt64> = []
-    var state: RecordState = .live
+    let lifetime: RecordLifetime
+    var state: RecordState = .live { didSet { if state != .live { lifetime.live = false } } }
     var cleanup: (() -> Void)?
+    var releaseReadiness: (() -> Bool)?
 
-    init(identity: HandleIdentity, dependencies: Set<UInt64>, cleanup: @escaping () -> Void) {
+    init(identity: HandleIdentity, admission: RuntimeMutex<AdmissionState>, dependencies: Set<UInt64>, releaseReadiness: (() -> Bool)?, cleanup: @escaping () -> Void) {
         self.identity = identity
+        lifetime = RecordLifetime(identity, admission: admission)
         self.dependencies = dependencies
         self.cleanup = cleanup
+        self.releaseReadiness = releaseReadiness
     }
 }
 
-private struct AdmissionState: Sendable {
+struct AdmissionState: Sendable {
     var thread: pthread_t?
     var entries = 0
     var shutdownRequested = false
@@ -43,6 +47,8 @@ private struct AdmissionState: Sendable {
 /// This class deliberately has no Sendable conformance.
 final class RuntimeControl {
     private let admission: RuntimeMutex<AdmissionState>
+    /// Exposes the close mailbox bit to ownership regression tests without granting mutation.
+    var admissionNotificationPending: Bool { admission.notificationPending }
     private let session: UInt64
     private let maximumRecords: Int
     private var records: [UInt64: CleanupRecord] = [:]
@@ -79,6 +85,30 @@ final class RuntimeControl {
         guard admitted else { throw OwnershipError.domainBusy }
     }
 
+    private func enterValidated(_ cell: HandleCell, matching kind: HandleKind?) throws {
+        guard cell.control === self else { throw OwnershipError.foreignSession }
+        let current = pthread_self()
+        let result: OwnershipError? = admission.withLock { state in
+            if let thread = state.thread, thread != current { return .domainBusy }
+            state.thread = current
+            state.entries += 1
+            applyPending(&state)
+            if state.shutdownRequested || closing { return .closedSession }
+            if let lifetime = cell.lifetime {
+                guard lifetime.identity == cell.identity, lifetime.live else { return .invalidHandle }
+            } else {
+                guard let record = records[cell.identity.generation], record.identity == cell.identity,
+                      record.state == .live else { return .invalidHandle }
+            }
+            if let kind, cell.identity.kind != kind { return .wrongKind }
+            return nil
+        }
+        if let result {
+            if result != .domainBusy { leave() }
+            throw result
+        }
+    }
+
     private func withDomain<Result: ~Copyable>(_ body: () throws -> Result) throws -> Result {
         try enter()
         defer { leave() }
@@ -90,7 +120,7 @@ final class RuntimeControl {
     private func leave() {
         while true {
             synchronize()
-            drainReady()
+            if !ready.isEmpty { drainReady() }
             let finished = admission.withLock { state in
                 precondition(state.thread == pthread_self() && state.entries > 0)
                 if state.entries > 1 {
@@ -110,6 +140,8 @@ final class RuntimeControl {
     /// Applies only value-state transitions while holding the bookkeeping mutex.
     /// No action or captured object's final release occurs in this critical section.
     private func applyPending(_ state: inout AdmissionState) {
+        // Publication holds this mutex, so an empty mailbox needs no transition or notification write.
+        guard state.pendingShutdown || !state.pendingRecords.isEmpty else { return }
         if state.pendingShutdown {
             state.pendingShutdown = false
             closing = true
@@ -120,9 +152,11 @@ final class RuntimeControl {
         }
         for generation in state.pendingRecords { markClosing(generation) }
         state.pendingRecords.removeAll(keepingCapacity: true)
+        admission.setNotification(false)
     }
 
     private func synchronize() {
+        guard admission.notificationPending else { return }
         admission.withLock { state in applyPending(&state) }
     }
 
@@ -160,6 +194,7 @@ final class RuntimeControl {
         nativeIdentifier: UInt64,
         kind: HandleKind,
         dependencies: [ObjectHandle],
+        releaseReadiness: (() -> Bool)? = nil,
         cleanup: @escaping () -> Void
     ) throws -> OwnedHandle {
         try withDomain {
@@ -185,14 +220,14 @@ final class RuntimeControl {
                 nextGeneration += 1
                 let identity = HandleIdentity(session: session, generation: nextGeneration,
                                               nativeIdentifier: nativeIdentifier, kind: kind)
-                let record = CleanupRecord(identity: identity, dependencies: dependencyGenerations, cleanup: cleanup)
+                let record = CleanupRecord(identity: identity, admission: admission, dependencies: dependencyGenerations, releaseReadiness: releaseReadiness, cleanup: cleanup)
                 records[identity.generation] = record
                 nativeIndex[key] = identity.generation
                 for dependency in dependencyGenerations { records[dependency]!.dependents.insert(identity.generation) }
                 acquisitions += 1
                 return identity
             }
-            return OwnedHandle(cell: HandleCell(control: self, identity: identity))
+            return OwnedHandle(cell: HandleCell(control: self, identity: identity, lifetime: records[identity.generation]!.lifetime))
         }
     }
 
@@ -205,12 +240,12 @@ final class RuntimeControl {
         matching kind: HandleKind?,
         _ body: () throws -> Result
     ) throws -> Result {
-        try withDomain {
-            try validate(cell, matching: kind)
-            nativeFrames += 1
-            defer { nativeFrames -= 1 }
-            return try body()
-        }
+        try enterValidated(cell, matching: kind)
+        defer { leave() }
+        // Admission precedes native work; draining here could run a cleanup that closes this record.
+        nativeFrames += 1
+        defer { nativeFrames -= 1 }
+        return try admission.withNativeScope(body)
     }
 
     func withNativeFrame<Result: ~Copyable>(_ body: () throws -> Result) throws -> Result {
@@ -222,7 +257,7 @@ final class RuntimeControl {
             guard !rejected else { throw OwnershipError.closedSession }
             nativeFrames += 1
             defer { nativeFrames -= 1 }
-            return try body()
+            return try admission.withNativeScope(body)
         }
     }
 
@@ -230,10 +265,14 @@ final class RuntimeControl {
     func requestClose(generation: UInt64?) -> CloseProgress {
         admission.withLock { state in
             if let generation {
-                if !state.shutdownRequested { state.pendingRecords.insert(generation) }
+                if !state.shutdownRequested {
+                    state.pendingRecords.insert(generation)
+                    admission.setNotification(true)
+                }
             } else if !state.shutdownRequested {
                 state.shutdownRequested = true
                 state.pendingShutdown = true
+                admission.setNotification(true)
             }
         }
         // A busy foreign caller posts value-only work; the active thread performs native teardown.
@@ -271,7 +310,7 @@ final class RuntimeControl {
             var subtree: Set<UInt64> = []
             while let generation = pending.popLast() {
                 guard subtree.insert(generation).inserted, let record = records[generation] else { continue }
-                guard generation == root.identity.generation || record.identity.kind == .serverResource else {
+                guard generation == root.identity.generation || (record.identity.kind == .serverResource || record.identity.kind == .serverResourceWatch || record.identity.kind == .serverResourceDestruction) else {
                     throw OwnershipError.liveDependents
                 }
                 pending.append(contentsOf: record.dependents)
@@ -303,46 +342,89 @@ final class RuntimeControl {
         }
     }
 
-    /// Callback delivery requires the complete native invocation to have an existing lease.
-    func withCallbackFrame<Result: ~Copyable>(_ cell: HandleCell, matching kind: HandleKind = .registration, _ body: () throws -> Result) throws -> Result {
-        try withDomain {
-            guard nativeFrames > 0 else { throw OwnershipError.invalidHandle }
-            try validate(cell, matching: kind)
-            nativeFrames += 1
-            defer { nativeFrames -= 1 }
-            return try body()
+    /// Validates a copied native-callback identity while its enclosing frame retains this domain.
+    func admitCallback(_ identity: HandleIdentity, lifetime: RecordLifetime? = nil) throws {
+        guard admission.matchesNativeFrame else { throw OwnershipError.invalidHandle }
+        synchronize()
+        guard nativeFrames > 0 && !closing else { throw OwnershipError.closedSession }
+        if let lifetime {
+            guard lifetime.identity == identity && lifetime.live else { throw OwnershipError.invalidHandle }
+        } else {
+            guard let record = records[identity.generation], record.identity == identity,
+                  record.state == .live else { throw OwnershipError.invalidHandle }
         }
+    }
+
+    /// Admits payload disposal without granting access to a logically closed receiver.
+    func admitClosingCallback(_ identity: HandleIdentity) throws {
+        guard admission.matchesNativeFrame else { throw OwnershipError.invalidHandle }
+        synchronize()
+        guard nativeFrames > 0, let record = records[identity.generation], record.identity == identity,
+              record.state == .live || record.state == .closing || record.state == .runtimeReleasing else { throw OwnershipError.invalidHandle }
+    }
+
+    /// Reuses outer-frame protection; returning from Swift does not end the native invocation.
+    func withCallbackFrame<Result: ~Copyable>(_ cell: HandleCell, matching kind: HandleKind = .registration, _ body: () throws -> Result) throws -> Result {
+        guard cell.control === self else { throw OwnershipError.foreignSession }
+        guard cell.identity.kind == kind else { throw OwnershipError.wrongKind }
+        try admitCallback(cell.identity, lifetime: cell.lifetime)
+        return try body()
     }
 
     private func drainReady() {
         guard nativeFrames == 0 && !draining else { return }
         draining = true
         defer { draining = false }
+        var deferred: [UInt64] = []
+        var progressed = false
         while true {
             synchronize()
-            guard let generation = ready.popLast() else { return }
+            guard let generation = ready.popLast() else {
+                for generation in deferred { if let record = records[generation] { enqueue(record) } }
+                deferred.removeAll(keepingCapacity: true)
+                guard progressed && !ready.isEmpty else { return }
+                progressed = false
+                continue
+            }
             queued.remove(generation)
             guard let record = records[generation], record.dependents.isEmpty else { continue }
             switch record.state {
             case .live, .runtimeReleasing:
                 continue
             case .closing:
+                if let readiness = record.releaseReadiness {
+                    nativeFrames += 1
+                    let allowed = admission.withNativeScope { readiness() }
+                    nativeFrames -= 1
+                    if record.state != .closing {
+                        enqueue(record)
+                        progressed = true
+                        continue
+                    }
+                    if !allowed { deferred.append(generation); continue }
+                }
                 // Consuming the action before entering C prevents a destroy callback from claiming it again.
                 let action = record.cleanup
                 record.cleanup = nil
+                record.releaseReadiness = nil
                 record.state = .runtimeReleasing
                 nativeFrames += 1
-                action?()
+                admission.withNativeScope { action?() }
                 nativeFrames -= 1
                 runtimeReleases += 1
                 retire(record)
+                progressed = true
                 // Captures can run destructors, so their lifetime ends outside all bookkeeping locks.
                 withExtendedLifetime(action) {}
             case .nativeConsumed, .transferred:
                 let captures = record.cleanup
+                let readiness = record.releaseReadiness
                 record.cleanup = nil
+                record.releaseReadiness = nil
                 retire(record)
+                progressed = true
                 withExtendedLifetime(captures) {}
+                withExtendedLifetime(readiness) {}
             }
         }
     }

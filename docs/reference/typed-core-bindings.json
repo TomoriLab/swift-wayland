@@ -1,0 +1,1740 @@
+{
+  "protocolHash": "cc860987e54f8d85c940e97fa1270c69b6e4ad31fbcf5a7f00107ce1157f5e07",
+  "ownershipEffects": {
+    "baseline": "libwayland 1.26.0",
+    "protocolSha256": "cc860987e54f8d85c940e97fa1270c69b6e4ad31fbcf5a7f00107ce1157f5e07",
+    "effects": [
+      {
+        "interface": "wl_fixes",
+        "request": "destroy_registry",
+        "argument": "registry",
+        "targetInterface": "wl_registry",
+        "client": "Consume the registry owner on every outcome; invalidate and locally destroy after marshalling.",
+        "server": "Invalidate the target before delivery, schedule framed native destruction, and deliver a copied resource snapshot.",
+        "source": "Protocols/wayland.xml: wl_fixes.destroy_registry description and wayland-client-protocol.h inline helper."
+      }
+    ]
+  },
+  "interfaces": 23,
+  "requests": 72,
+  "events": 62,
+  "nativeReserved": [
+    "wl_display native error and ID management",
+    "wl_registry native server bind implementation"
+  ],
+  "coverage": "Generated in both directions. All ordinary core messages have independent C-peer wire tests; native-reserved display/registry messages retain native implementations and integration tests.",
+  "messages": [
+    {
+      "interface": "wl_display",
+      "direction": "requests",
+      "name": "sync",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "callback",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_display",
+      "direction": "requests",
+      "name": "get_registry",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "registry",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_display",
+      "direction": "events",
+      "name": "error",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_display",
+      "direction": "events",
+      "name": "delete_id",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_registry",
+      "direction": "requests",
+      "name": "bind",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_registry",
+      "direction": "events",
+      "name": "global",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_registry",
+      "direction": "events",
+      "name": "global_remove",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_callback",
+      "direction": "events",
+      "name": "done",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_compositor",
+      "direction": "requests",
+      "name": "create_surface",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_compositor",
+      "direction": "requests",
+      "name": "create_region",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_compositor",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 2,
+      "since": 7,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm_pool",
+      "direction": "requests",
+      "name": "create_buffer",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm_pool",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 1,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm_pool",
+      "direction": "requests",
+      "name": "resize",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm",
+      "direction": "requests",
+      "name": "create_pool",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        },
+        {
+          "argument": "fd",
+          "kind": "fd"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 1,
+      "since": 2,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shm",
+      "direction": "events",
+      "name": "format",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_buffer",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_buffer",
+      "direction": "events",
+      "name": "release",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "requests",
+      "name": "accept",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "requests",
+      "name": "receive",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "fd",
+          "kind": "fd"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 2,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "requests",
+      "name": "finish",
+      "opcode": 3,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "requests",
+      "name": "set_actions",
+      "opcode": 4,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "events",
+      "name": "offer",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "events",
+      "name": "source_actions",
+      "opcode": 1,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_offer",
+      "direction": "events",
+      "name": "action",
+      "opcode": 2,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "requests",
+      "name": "offer",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 1,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "requests",
+      "name": "set_actions",
+      "opcode": 2,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "target",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "send",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "fd",
+          "kind": "fd"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "cancelled",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "dnd_drop_performed",
+      "opcode": 3,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "dnd_finished",
+      "opcode": 4,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_source",
+      "direction": "events",
+      "name": "action",
+      "opcode": 5,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "requests",
+      "name": "start_drag",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "requests",
+      "name": "set_selection",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 2,
+      "since": 2,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "data_offer",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "enter",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "leave",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "motion",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "drop",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device",
+      "direction": "events",
+      "name": "selection",
+      "opcode": 5,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device_manager",
+      "direction": "requests",
+      "name": "create_data_source",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device_manager",
+      "direction": "requests",
+      "name": "get_data_device",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_data_device_manager",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 2,
+      "since": 4,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell",
+      "direction": "requests",
+      "name": "get_shell_surface",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "pong",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "move",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "resize",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_toplevel",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_transient",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_fullscreen",
+      "opcode": 5,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_popup",
+      "opcode": 6,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_maximized",
+      "opcode": 7,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_title",
+      "opcode": 8,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "requests",
+      "name": "set_class",
+      "opcode": 9,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "events",
+      "name": "ping",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "events",
+      "name": "configure",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_shell_surface",
+      "direction": "events",
+      "name": "popup_done",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "attach",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "damage",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "frame",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "callback",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "set_opaque_region",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "set_input_region",
+      "opcode": 5,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "commit",
+      "opcode": 6,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "set_buffer_transform",
+      "opcode": 7,
+      "since": 2,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "set_buffer_scale",
+      "opcode": 8,
+      "since": 3,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "damage_buffer",
+      "opcode": 9,
+      "since": 4,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "offset",
+      "opcode": 10,
+      "since": 5,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "requests",
+      "name": "get_release",
+      "opcode": 11,
+      "since": 7,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "callback",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "events",
+      "name": "enter",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "events",
+      "name": "leave",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "events",
+      "name": "preferred_buffer_scale",
+      "opcode": 2,
+      "since": 6,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_surface",
+      "direction": "events",
+      "name": "preferred_buffer_transform",
+      "opcode": 3,
+      "since": 6,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "requests",
+      "name": "get_pointer",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "requests",
+      "name": "get_keyboard",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "requests",
+      "name": "get_touch",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 3,
+      "since": 5,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "events",
+      "name": "capabilities",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_seat",
+      "direction": "events",
+      "name": "name",
+      "opcode": 1,
+      "since": 2,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "requests",
+      "name": "set_cursor",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 1,
+      "since": 3,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "enter",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "leave",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "motion",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "button",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "frame",
+      "opcode": 5,
+      "since": 5,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis_source",
+      "opcode": 6,
+      "since": 5,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis_stop",
+      "opcode": 7,
+      "since": 5,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis_discrete",
+      "opcode": 8,
+      "since": 5,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis_value120",
+      "opcode": 9,
+      "since": 8,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "axis_relative_direction",
+      "opcode": 10,
+      "since": 9,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_pointer",
+      "direction": "events",
+      "name": "warp",
+      "opcode": 11,
+      "since": 11,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 0,
+      "since": 3,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "keymap",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "fd",
+          "kind": "fd"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "enter",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "leave",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "key",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "modifiers",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_keyboard",
+      "direction": "events",
+      "name": "repeat_info",
+      "opcode": 5,
+      "since": 4,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 0,
+      "since": 3,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "down",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "up",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "motion",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "frame",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "cancel",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "shape",
+      "opcode": 5,
+      "since": 6,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_touch",
+      "direction": "events",
+      "name": "orientation",
+      "opcode": 6,
+      "since": 6,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "requests",
+      "name": "release",
+      "opcode": 0,
+      "since": 3,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "geometry",
+      "opcode": 0,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "mode",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "done",
+      "opcode": 2,
+      "since": 2,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "scale",
+      "opcode": 3,
+      "since": 2,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "name",
+      "opcode": 4,
+      "since": 4,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_output",
+      "direction": "events",
+      "name": "description",
+      "opcode": 5,
+      "since": 4,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_region",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_region",
+      "direction": "requests",
+      "name": "add",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_region",
+      "direction": "requests",
+      "name": "subtract",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subcompositor",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subcompositor",
+      "direction": "requests",
+      "name": "get_subsurface",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [
+        {
+          "argument": "id",
+          "kind": "new_id"
+        }
+      ],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "set_position",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "place_above",
+      "opcode": 2,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "place_below",
+      "opcode": 3,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "set_sync",
+      "opcode": 4,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_subsurface",
+      "direction": "requests",
+      "name": "set_desync",
+      "opcode": 5,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_fixes",
+      "direction": "requests",
+      "name": "destroy",
+      "opcode": 0,
+      "since": 1,
+      "destructor": true,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_fixes",
+      "direction": "requests",
+      "name": "destroy_registry",
+      "opcode": 1,
+      "since": 1,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    },
+    {
+      "interface": "wl_fixes",
+      "direction": "requests",
+      "name": "ack_global_remove",
+      "opcode": 2,
+      "since": 2,
+      "destructor": false,
+      "ownedIncoming": [],
+      "clientBinding": "Sources/WaylandClient/CoreBindings.swift",
+      "serverBinding": "Sources/WaylandServer/CoreBindings.swift",
+      "documentation": "docs/WaylandKit.docc/TypedProtocol.md"
+    }
+  ]
+}

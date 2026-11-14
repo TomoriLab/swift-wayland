@@ -2,7 +2,7 @@ import CWaylandClient
 import WaylandRuntime
 
 /// Reports failure to acquire or use a native client resource.
-package enum ClientError: Error, Equatable, Sendable {
+public enum ClientError: Error, Equatable, Sendable {
     /// The native call returned null or failed with the saved errno.
     case nativeFailure(Int32)
     /// A native event contains an unsupported argument representation.
@@ -15,7 +15,7 @@ package enum ClientError: Error, Equatable, Sendable {
 /// dispatcher adapter. Their native obligations are always discharged after
 /// delivery, including canceled delivery. Typed ownership-taking protocol
 /// decoders require a separate generated path before they can publish owners.
-package enum ClientEventArgument: Equatable, Sendable {
+public enum ClientEventArgument: Equatable, Sendable {
     /// An exact native signed integer.
     case signed(Int32)
     /// An exact native unsigned integer.
@@ -35,13 +35,13 @@ package enum ClientEventArgument: Equatable, Sendable {
 }
 
 /// Provides a fully owned, Sendable observation of one native event.
-package struct ClientEvent: Equatable, Sendable {
+public struct ClientEvent: Equatable, Sendable {
     /// The source-order event opcode.
-    package let opcode: UInt32
+    public let opcode: UInt32
     /// A copied native message name.
-    package let name: String
+    public let name: String
     /// Copied values in wire argument order.
-    package let arguments: [ClientEventArgument]
+    public let arguments: [ClientEventArgument]
 }
 
 final class ClientDispatcherDiagnostics {
@@ -116,25 +116,25 @@ final class ClientDispatcherContext {
 /// cleaned even when delivery is canceled or throws. It does not transfer event
 /// constructor ownership. Native metadata must remain valid until queued native
 /// closures retire. All dispatch must be enclosed by this session's native frame.
-package struct ClientProxyDispatcher<Context: AnyObject>: ~Copyable {
+public struct ClientProxyDispatcher<Context: AnyObject>: ~Copyable {
     private let owner: ProxyDispatcherOwner<ClientDispatcherContext>
     private let diagnostics: ClientDispatcherDiagnostics
 
     /// Returns the last decode or handler failure even though native dispatch ignores its C return code.
-    package var failure: (any Error)? { borrowing get { diagnostics.failure } }
+    public var failure: (any Error)? { borrowing get { diagnostics.failure } }
 
     /// Provides checked identity for native lifetime dependencies.
-    package var lifetime: ObjectHandle { borrowing get { owner.lifetime } }
+    public var lifetime: ObjectHandle { borrowing get { owner.lifetime } }
     /// Provides a delivery-only cancellation handle that may cross threads.
-    package var cancellation: CallbackCancellation { borrowing get { owner.cancellation } }
+    public var cancellation: CallbackCancellation { borrowing get { owner.cancellation } }
     /// Issues the sole logical subscription; dropping it does not destroy the proxy.
-    package borrowing func subscription() throws -> CallbackSubscription { try owner.subscription() }
+    public borrowing func subscription() throws -> CallbackSubscription { try owner.subscription() }
     /// Requests local destruction after complete native-frame quiescence.
     @discardableResult
-    package borrowing func requestClose() -> CloseProgress { owner.requestClose() }
+    public borrowing func requestClose() -> CloseProgress { owner.requestClose() }
     /// Consumes proxy authority and requests local destruction exactly once.
     @discardableResult
-    package consuming func close() -> CloseProgress { owner.close() }
+    public consuming func close() -> CloseProgress { owner.close() }
 
     /// Consumes an exclusively owned ordinary proxy on success and failure.
     ///
@@ -143,7 +143,7 @@ package struct ClientProxyDispatcher<Context: AnyObject>: ~Copyable {
     /// userdata replacement, and independent destruction are prohibited. Metadata
     /// must be immutable and outlive all queued closures. The handler must not
     /// create an ARC cycle through its session. Fallback sends no protocol request.
-    @unsafe package init(
+    @unsafe public init(
         receiving proxy: OpaquePointer,
         in session: borrowing OwnershipSession,
         dependencies: [ObjectHandle] = [],

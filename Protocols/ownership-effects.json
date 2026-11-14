@@ -1,0 +1,15 @@
+{
+  "baseline": "libwayland 1.26.0",
+  "protocolSha256": "cc860987e54f8d85c940e97fa1270c69b6e4ad31fbcf5a7f00107ce1157f5e07",
+  "effects": [
+    {
+      "interface": "wl_fixes",
+      "request": "destroy_registry",
+      "argument": "registry",
+      "targetInterface": "wl_registry",
+      "client": "Consume the registry owner on every outcome; invalidate and locally destroy after marshalling.",
+      "server": "Invalidate the target before delivery, schedule framed native destruction, and deliver a copied resource snapshot.",
+      "source": "Protocols/wayland.xml: wl_fixes.destroy_registry description and wayland-client-protocol.h inline helper."
+    }
+  ]
+}

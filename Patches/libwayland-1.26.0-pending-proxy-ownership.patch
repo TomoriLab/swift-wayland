@@ -1,0 +1,139 @@
+--- a/src/wayland-client.c
++++ b/src/wayland-client.c
+@@ -53,6 +53,7 @@
+ 	WL_PROXY_FLAG_ID_DELETED = (1 << 0),
+ 	WL_PROXY_FLAG_DESTROYED = (1 << 1),
+ 	WL_PROXY_FLAG_WRAPPER = (1 << 2),
++	WL_PROXY_FLAG_UNCLAIMED = (1 << 3),
+ };
+ 
+ struct wl_zombie {
+@@ -265,12 +266,57 @@
+ 		case WL_ARG_NEW_ID:
+ 		case WL_ARG_OBJECT:
+ 			proxy = (struct wl_proxy *) closure->args[i].o;
+-			if (proxy && proxy->flags & WL_PROXY_FLAG_DESTROYED)
++			if (proxy && proxy->flags & WL_PROXY_FLAG_DESTROYED) {
+ 				closure->args[i].o = NULL;
++				wl_proxy_unref(proxy);
++			}
+ 			break;
+ 		default:
+ 			break;
+ 		}
++	}
++}
++
++static void
++wl_proxy_destroy_caller_locks(struct wl_proxy *proxy);
++
++/* Constructor ownership transfers only when an installed callback is invoked. */
++static void
++destroy_unclaimed_proxies(struct wl_closure *closure)
++{
++	const char *signature = closure->message->signature;
++	struct argument_details arg;
++	struct wl_proxy *proxy;
++	int i, count = arg_count_for_signature(signature);
++
++	for (i = 0; i < count; i++) {
++		signature = get_next_argument(signature, &arg);
++		if (arg.type != WL_ARG_NEW_ID)
++			continue;
++		proxy = (struct wl_proxy *) closure->args[i].o;
++		if (!proxy || !(proxy->flags & WL_PROXY_FLAG_UNCLAIMED))
++			continue;
++		proxy->flags &= ~WL_PROXY_FLAG_UNCLAIMED;
++		if (!(proxy->flags & WL_PROXY_FLAG_DESTROYED))
++			wl_proxy_destroy_caller_locks(proxy);
++	}
++}
++
++static void
++claim_constructor_proxies(struct wl_closure *closure)
++{
++	const char *signature = closure->message->signature;
++	struct argument_details arg;
++	struct wl_proxy *proxy;
++	int i, count = arg_count_for_signature(signature);
++
++	for (i = 0; i < count; i++) {
++		signature = get_next_argument(signature, &arg);
++		if (arg.type != WL_ARG_NEW_ID)
++			continue;
++		proxy = (struct wl_proxy *) closure->args[i].o;
++		if (proxy)
++			proxy->flags &= ~WL_PROXY_FLAG_UNCLAIMED;
+ 	}
+ }
+ 
+@@ -285,6 +331,7 @@
+ 	struct wl_proxy *proxy;
+ 	int i, count;
+ 
++	destroy_unclaimed_proxies(closure);
+ 	signature = closure->message->signature;
+ 	count = arg_count_for_signature(signature);
+ 	for (i = 0; i < count; i++) {
+@@ -1392,12 +1439,12 @@
+ wl_display_disconnect(struct wl_display *display)
+ {
+ 	wl_connection_destroy(display->connection);
+-	wl_map_for_each(&display->objects, free_zombies, NULL);
+-	wl_map_release(&display->objects);
+ 	wl_event_queue_release(&display->default_queue);
+ 	free(display->default_queue.name);
+ 	wl_event_queue_release(&display->display_queue);
+ 	free(display->display_queue.name);
++	wl_map_for_each(&display->objects, free_zombies, NULL);
++	wl_map_release(&display->objects);
+ 	pthread_mutex_destroy(&display->mutex);
+ 	pthread_cond_destroy(&display->reader_cond);
+ 	close(display->fd);
+@@ -1512,6 +1559,8 @@
+ create_proxies(struct wl_proxy *sender, struct wl_closure *closure)
+ {
+ 	struct wl_proxy *proxy;
++	struct wl_proxy *created[WL_CLOSURE_MAX_ARGS];
++	int created_count = 0;
+ 	const char *signature;
+ 	struct argument_details arg;
+ 	uint32_t id;
+@@ -1533,11 +1582,18 @@
+ 		proxy = wl_proxy_create_for_id(sender, id,
+ 					       closure->message->types[i]);
+ 		if (proxy == NULL)
+-			return -1;
++			goto fail;
++		proxy->flags |= WL_PROXY_FLAG_UNCLAIMED;
++		created[created_count++] = proxy;
+ 		closure->args[i].o = (struct wl_object *)proxy;
+ 	}
+ 
+ 	return 0;
++
++fail:
++	while (created_count > 0)
++		wl_proxy_destroy_caller_locks(created[--created_count]);
++	return -1;
+ }
+ 
+ static void
+@@ -1659,6 +1715,7 @@
+ 	}
+ 
+ 	if (wl_closure_lookup_objects(closure, &display->objects) != 0) {
++		destroy_unclaimed_proxies(closure);
+ 		wl_closure_destroy(closure);
+ 		return -1;
+ 	}
+@@ -1722,6 +1779,9 @@
+ 		destroy_queued_closure(closure);
+ 		return;
+ 	}
++
++	if (proxy->dispatcher || proxy->object.implementation)
++		claim_constructor_proxies(closure);
+ 
+ 	pthread_mutex_unlock(&display->mutex);
+ 

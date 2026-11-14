@@ -6,7 +6,7 @@ Manage native lifetime obligations with checked handles and dependency-ordered d
 
 This package-access module is the internal ownership foundation shared by the staged WaylandKit client and server targets. It is implemented and tested on x86_64 Linux with Swift 6.4.2. Native adoption and native destruction notification require audited adapter contracts; the module does not expose a complete Wayland client or compositor API.
 
-Read <doc:OwnershipRuntime> for the implemented state model, unsafe boundaries, native-frame semantics, tests, and limitations. The broader project design starts at <doc:WaylandKit>.
+Read <doc:OwnershipRuntime> for the implemented state model, unsafe boundaries, native-frame semantics, tests, and limitations. The broader project design starts at <doc:Architecture>.
 
 ## Topics
 
@@ -56,4 +56,4 @@ Read <doc:OwnershipRuntime> for the implemented state model, unsafe boundaries, 
 
 - <doc:OwnershipRuntime>
 - <doc:ImplementationProgress>
-- <doc:WaylandKit>
+- <doc:Architecture>

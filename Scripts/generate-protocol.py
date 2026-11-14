@@ -44,7 +44,7 @@ def distinct(elements):
     names = [element.attrib["name"] for element in elements]
     require(len(names) == len(set(names)), "Duplicate source name.")
 
-def parse(data):
+def xml_root(data):
     require(len(data) <= 4 * 1024 * 1024, "XML exceeds the scanner input quota.")
     text = data.decode("utf-8-sig")
     require("\x00" not in text, "Only UTF-8 XML input is supported.")
@@ -55,6 +55,10 @@ def parse(data):
     require("<!DOCTYPE" not in text.upper() and "<!ENTITY" not in text.upper(), "DTD and entities are prohibited.")
     root = ElementTree.fromstring(text)
     require(root.tag == "protocol", "Expected protocol root.")
+    return root
+
+def parse(data, external_interfaces=frozenset(), external_enumerations=frozenset()):
+    root = xml_root(data)
     for element in root.iter():
         require(element.tag in ATTRIBUTES, "Unknown XML element: " + element.tag)
         require(set(element.attrib) <= ATTRIBUTES[element.tag], "Unknown semantic attribute: " + element.tag)
@@ -68,13 +72,13 @@ def parse(data):
     require(root.findall("interface"), "A protocol must define an interface.")
     interfaces = root.findall("interface")
     distinct(interfaces)
-    interface_names = {element.attrib["name"] for element in interfaces}
+    interface_names = {element.attrib["name"] for element in interfaces} | set(external_interfaces)
     enumerations = {interface.attrib["name"] + "." + enumeration.attrib["name"]
-                    for interface in interfaces for enumeration in interface.findall("enum")}
+                    for interface in interfaces for enumeration in interface.findall("enum")} | set(external_enumerations)
     result = {"protocol": root.attrib["name"], "sha256": hashlib.sha256(data).hexdigest(),
               "copyright": root.findtext("copyright", "").strip(), "interfaces": []}
     for interface in interfaces:
-        version = number(interface.attrib["version"])
+        version = number(interface.attrib["version"], maximum=0x7FFFFFFF)
         require(interface.get("frozen") in [None, "true", "false"], "Invalid frozen flag.")
         model = {"name": interface.attrib["name"], "version": version, "frozen": interface.get("frozen") == "true",
                  "description": interface.findtext("description", "").strip(), "requests": [], "events": [], "enumerations": []}
@@ -100,6 +104,8 @@ def parse(data):
                     require(not nullable or kind in ["object", "string", "array"], "Invalid nullable native type.")
                     target = argument.get("interface")
                     require(target is None or (kind in ["object", "new_id"] and target in interface_names), "Unknown interface.")
+                    require(kind != "new_id" or target is not None or direction == "request",
+                            "An event constructor requires a declared interface.")
                     enumeration = argument.get("enum")
                     if enumeration and "." not in enumeration:
                         enumeration = model["name"] + "." + enumeration
@@ -127,18 +133,44 @@ def parse(data):
         result["interfaces"].append(model)
     return result
 
+def parse_bundle(documents):
+    documents = list(documents)
+    require(0 < len(documents) <= 64, "A protocol bundle requires between one and 64 XML inputs.")
+    require(sum(len(data) for data in documents) <= 16 * 1024 * 1024, "Protocol bundle exceeds its aggregate input quota.")
+    roots = [xml_root(data) for data in documents]
+    interfaces = [interface for root in roots for interface in root.findall("interface")]
+    require(len(interfaces) <= 4096, "Protocol bundle exceeds its interface quota.")
+    names = [identifier(interface.get("name")) for interface in interfaces]
+    require(len(names) == len(set(names)), "Duplicate imported interface definition.")
+    protocols = [identifier(root.get("name")) for root in roots]
+    require(len(protocols) == len(set(protocols)), "Duplicate imported protocol definition.")
+    enumerations = {interface.get("name") + "." + identifier(enumeration.get("name"))
+                    for interface in interfaces for enumeration in interface.findall("enum")}
+    models = [parse(data, set(names), enumerations) for data in documents]
+    digest = hashlib.sha256()
+    for data in documents:
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+    return {"protocol": models[0]["protocol"], "sha256": digest.hexdigest(),
+            "copyright": "\n\n".join(model["copyright"] for model in models if model["copyright"]),
+            "inputs": [{"protocol": model["protocol"], "sha256": model["sha256"]} for model in models],
+            "interfaces": [interface for model in models for interface in model["interfaces"]]}
+
 def literal(value):
     if value is None: return "nil"
     if isinstance(value, bool): return "true" if value else "false"
     return json.dumps(value, ensure_ascii=False)
 
-def swift(model):
+def swift(model, namespace="CoreProtocol", external=False):
+    require(re.fullmatch(r"[A-Z][A-Za-z0-9]*", namespace), "Invalid generated Swift namespace.")
+    names = {interface["name"]: "interface" + str(index) if external else interface["name"] for index, interface in enumerate(model["interfaces"])}
     lines = ["// Generated by Scripts/generate-protocol.py. Do not edit.", "// XML SHA-256: " + model["sha256"], *["// " + line if line else "//" for line in model["copyright"].splitlines()],
-             "", "/// Provides complete source-order metadata for the pinned core protocol.", "package enum CoreProtocol {",
-             "    /// The exact SHA-256 of the source XML.", "    package static let sourceHash = " + literal(model["sha256"]),
-             "    /// All native interfaces in source order.", "    package static let interfaces: [ProtocolInterfaceSchema] = [" + ", ".join(i["name"] for i in model["interfaces"]) + "]"]
+             *(["import WaylandProtocol"] if external else []),
+             "", ("/// Provides complete source-order metadata for the pinned protocol inputs." if external else "/// Provides complete source-order metadata for the pinned core protocol."), "public enum " + namespace + " {",
+             "    /// The exact SHA-256 of the source XML.", "    public static let sourceHash = " + literal(model["sha256"]),
+             "    /// All native interfaces in source order.", "    public static let interfaces: [ProtocolInterfaceSchema] = [" + ", ".join(names[i["name"]] for i in model["interfaces"]) + "]"]
     for interface in model["interfaces"]:
-        lines += ["", "    private static let " + interface["name"] + " = ProtocolInterfaceSchema(",
+        lines += ["", "    private static let " + names[interface["name"]] + " = ProtocolInterfaceSchema(",
                   "        name: " + literal(interface["name"]) + ", version: " + str(interface["version"]) + ","]
         for direction in ["requests", "events"]:
             lines.append("        " + direction + ": [")
@@ -160,9 +192,20 @@ def swift(model):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--xml", type=Path, help="Primary protocol XML; imports are supplied explicitly.")
+    parser.add_argument("--import", dest="imports", type=Path, action="append", default=[])
+    parser.add_argument("--output-directory", type=Path)
+    parser.add_argument("--namespace", default="GeneratedProtocol")
     arguments = parser.parse_args()
-    model = parse((ROOT / "Protocols/wayland.xml").read_bytes())
-    outputs = {ROOT / "Sources/WaylandProtocol/CoreProtocol.swift": swift(model),
+    if arguments.xml:
+        require(arguments.output_directory is not None, "External generation requires --output-directory.")
+        model = parse_bundle([path.read_bytes() for path in [arguments.xml, *arguments.imports]])
+        outputs = {arguments.output_directory / (arguments.namespace + ".swift"): swift(model, arguments.namespace, external=True),
+                   arguments.output_directory / "protocol-manifest.json": json.dumps(model, indent=2, ensure_ascii=False) + "\n"}
+    else:
+        require(not arguments.imports and arguments.output_directory is None, "External generation requires --xml.")
+        model = parse((ROOT / "Protocols/wayland.xml").read_bytes())
+        outputs = {ROOT / "Sources/WaylandProtocol/CoreProtocol.swift": swift(model),
                ROOT / "docs/reference/core-protocol-manifest.json": json.dumps(model, indent=2, ensure_ascii=False) + "\n"}
     for path, text in outputs.items():
         if arguments.check:

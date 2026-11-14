@@ -1,0 +1,30 @@
+<protocol name="waylandkit_lifecycle">
+  <interface name="waylandkit_parent" version="2">
+    <request name="make_child"><arg name="identifier" type="new_id" interface="waylandkit_child"/></request>
+    <request name="invoke">
+      <arg name="value" type="uint"/>
+      <arg name="child" type="object" interface="waylandkit_child" allow-null="true"/>
+      <arg name="label" type="string" allow-null="true"/>
+      <arg name="bytes" type="array"/>
+      <arg name="descriptor" type="fd"/>
+    </request>
+    <request name="emit"><arg name="kind" type="uint"/></request>
+    <request name="destroy" type="destructor"/>
+    <request name="replace" since="2" type="destructor"><arg name="identifier" type="new_id" interface="waylandkit_child"/></request>
+    <request name="create_generic" since="2"><arg name="identifier" type="new_id"/></request>
+    <request name="destroy_with_descriptor" since="2" type="destructor"><arg name="descriptor" type="fd"/></request>
+    <event name="scalar"><arg name="value" type="uint"/></event>
+    <event name="created">
+      <arg name="child" type="new_id" interface="waylandkit_child"/>
+      <arg name="descriptor" type="fd"/>
+      <arg name="parent" type="object" interface="waylandkit_parent"/>
+    </event>
+    <event name="terminal" since="2" type="destructor"><arg name="descriptor" type="fd"/></event>
+  </interface>
+  <interface name="waylandkit_child" version="2">
+    <request name="destroy" type="destructor"/>
+    <request name="mark"><arg name="value" type="uint"/></request>
+    <event name="value"><arg name="value" type="uint"/></event>
+    <event name="terminal" since="2" type="destructor"><arg name="descriptor" type="fd"/></event>
+  </interface>
+</protocol>

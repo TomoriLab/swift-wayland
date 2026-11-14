@@ -4,9 +4,16 @@
 /* The implementation pointer belongs to one permanent runtime context. */
 typedef int (*wayland_kit_dispatcher)(const void *, void *, uint32_t, const struct wl_message *, union wl_argument *);
 int wayland_kit_install_dispatcher(struct wl_proxy *proxy, wayland_kit_dispatcher dispatcher, void *context);
+/* Implementation and userdata remain reachable until proxy destruction and outer-frame quiescence. */
+int wayland_kit_install_dispatcher_with_implementation(struct wl_proxy *proxy, wayland_kit_dispatcher dispatcher, void *implementation, void *context);
 /* Consumes owned input obligations that a snapshot handler cannot retain. */
 void wayland_kit_discard_event(const struct wl_message *message, union wl_argument *arguments);
 /* Returns readable=1, timeout=0, canceled=2, or failure=-1 with saved errno. */
 int wayland_kit_wait_readable(struct wl_display *, int wake_descriptor, int timeout, int *error);
 struct wl_proxy *wayland_kit_sync_on_queue(struct wl_display *, struct wl_event_queue *);
+const struct wl_interface *wayland_kit_client_core_interface(const char *name);
+void wayland_kit_discard_unclaimed(const struct wl_message *, union wl_argument *, uint32_t claimed);
+void wayland_kit_shell_surface_resize(struct wl_shell_surface *, struct wl_seat *, uint32_t, uint32_t);
+#include "WaylandLogScope.h"
+void wayland_kit_client_raw_log_handler(wayland_runtime_raw_log_callback callback);
 #endif

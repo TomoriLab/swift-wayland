@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build separate module archives, verify symbols, and merge detailed DocC documentation."""
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -11,9 +12,12 @@ import sys
 import tempfile
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
-MODULES = ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient', 'WaylandServer']
+MODULES = ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient', 'WaylandServer', 'WaylandCursor', 'WaylandEGL', 'WaylandUtilities', 'WaylandKit']
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--hosting-base-path', help='Transform the merged archive for static hosting at this URL path; use an empty value for a domain root.')
+    arguments = parser.parse_args()
     specification = importlib.util.spec_from_file_location('toolchain', ROOT / 'Scripts/verify-toolchain.py')
     toolchain = importlib.util.module_from_spec(specification)
     specification.loader.exec_module(toolchain)
@@ -24,11 +28,14 @@ def main():
     (output / 'report.json').write_text(json.dumps({'passed': False, 'status': 'building'}) + '\n')
     environment = os.environ.copy()
     for name in ['CC', 'CXX', 'CPP', 'LD', 'AR', 'NM', 'RANLIB', 'STRIP']: environment.pop(name, None)
+    catalog = ROOT / 'docs/WaylandKit.docc'
+    def input_snapshot():
+        paths=[Path(__file__),ROOT/'Package.swift',*[path for path in catalog.rglob('*') if path.is_file()],
+               *[path for path in (ROOT/'Sources').rglob('*') if path.is_file()]]
+        return {str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
+    hashes=input_snapshot()
     subprocess.run([str(swift), 'package', 'dump-symbol-graph', '--minimum-access-level', 'package'], cwd=ROOT, env=environment, check=True)
     graphs = ROOT / '.build/out/symbolgraph'
-    catalog = ROOT / 'docs/WaylandKit.docc'
-    inputs = [Path(__file__), *catalog.glob('*.md'), *(ROOT / 'Sources').rglob('*.swift')]
-    hashes = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
     report = {'inputs': hashes, 'modules': {}}
     archives = []
     with tempfile.TemporaryDirectory(prefix='inputs-', dir=output) as temporary:
@@ -43,18 +50,37 @@ def main():
                 else: shutil.copy2(source, module_catalog / source.name)
             symbols_directory = directory / 'symbols'
             symbols_directory.mkdir()
-            graph = graphs / (module + '.symbols.json')
-            shutil.copy2(graph, symbols_directory / graph.name)
-            symbols = json.loads(graph.read_text())['symbols']
+            module_graphs = [graphs / (module + '.symbols.json'), *sorted(graphs.glob(module + '@*.symbols.json'))]
+            symbols_by_identifier = {}
+            for graph in module_graphs:
+                graph_data = json.loads(graph.read_text())
+                for symbol in graph_data['symbols']:
+                    precise = symbol['identifier']['precise']
+                    if symbol.get('docComment') or not (precise.startswith('s:s9OptionSetP') and '::SYNTHESIZED::' in precise):
+                        continue
+                    # Swift emits an undocumented integer-specialized overload alongside
+                    # the documented standard OptionSet default with the same signature.
+                    inherited = [candidate for candidate in graph_data['symbols']
+                                 if candidate.get('docComment') and candidate['pathComponents'] == symbol['pathComponents']
+                                 and candidate.get('declarationFragments') == symbol.get('declarationFragments')]
+                    if inherited:
+                        symbol['docComment'] = inherited[0]['docComment']
+                (symbols_directory / graph.name).write_text(json.dumps(graph_data) + '\n')
+                for symbol in graph_data['symbols']:
+                    symbols_by_identifier[symbol['identifier']['precise']] = symbol
+            symbols = list(symbols_by_identifier.values())
             if any(not symbol.get('docComment') for symbol in symbols):
-                raise RuntimeError('Undocumented package-access symbol in ' + module)
+                raise RuntimeError('Undocumented symbol in ' + module + ': ' + ', '.join('.'.join(symbol['pathComponents']) for symbol in symbols if not symbol.get('docComment')))
             archive = output / (module + '.doccarchive')
             command = [str(docc), 'convert', str(module_catalog), '--additional-symbol-graph-dir', str(symbols_directory),
                        '--output-dir', str(archive), '--fallback-display-name', module,
                        '--fallback-bundle-identifier', 'org.tomorilab.WaylandKit.' + module, '--warnings-as-errors',
                        '--enable-experimental-external-link-support']
-            if module in ['WaylandClient', 'WaylandServer']:
-                command += ['--dependency', str(output / 'WaylandRuntime.doccarchive')]
+            dependencies = {'WaylandClient': ['WaylandRuntime', 'WaylandProtocol'], 'WaylandServer': ['WaylandRuntime', 'WaylandProtocol'],
+                            'WaylandCursor': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient'],
+                            'WaylandEGL': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient'], 'WaylandUtilities': ['WaylandRuntime'], 'WaylandKit': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient']}
+            for dependency in dependencies.get(module, []):
+                command += ['--dependency', str(output / (dependency + '.doccarchive'))]
             subprocess.run(command, cwd=ROOT, env=environment, check=True)
             pages = list((archive / 'data/documentation').rglob('*.json'))
             identifiers = {json.loads(page.read_text()).get('metadata', {}).get('externalID') for page in pages}
@@ -69,9 +95,22 @@ def main():
                         '--synthesized-landing-page-name', 'WaylandKit'], env=environment, check=True)
         if combined.exists(): shutil.rmtree(combined)
         shutil.move(replacement, combined)
+    if arguments.hosting_base_path is not None:
+        subprocess.run([str(docc), 'process-archive', 'transform-for-static-hosting', str(combined),
+                        '--hosting-base-path', arguments.hosting_base_path], env=environment, check=True)
+        # The package landing page lives at /documentation, including under a repository base path.
+        (combined / 'index.html').write_text(
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta http-equiv="refresh" content="0; url=documentation/">'
+            '<title>WaylandKit Documentation</title></head><body>'
+            '<a href="documentation/">WaylandKit Documentation</a></body></html>\n')
+        (combined / '.nojekyll').touch()
+        if not (combined / 'documentation/index.html').is_file():
+            raise RuntimeError('The static documentation landing page is missing.')
+        report['hostingBasePath'] = arguments.hosting_base_path
     report['symbols'] = sum(module['symbols'] for module in report['modules'].values())
     report['combinedPages'] = len(list((combined / 'data').rglob('*.json')))
-    if hashes != {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}:
+    if hashes != input_snapshot():
         raise RuntimeError('Documentation inputs changed during verification.')
     report['passed'] = True
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')

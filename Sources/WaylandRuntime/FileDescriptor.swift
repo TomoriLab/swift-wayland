@@ -1,7 +1,7 @@
 import CWaylandRuntime
 
 /// Describes descriptor-specific failures without losing native errno information.
-package enum FileDescriptorError: Error, Equatable, Sendable {
+public enum FileDescriptorError: Error, Equatable, Sendable {
     /// The raw value was negative, closed, or otherwise invalid at adoption.
     case invalidDescriptor(Int32)
     /// F_DUPFD_CLOEXEC failed and produced no new descriptor.
@@ -13,23 +13,23 @@ package enum FileDescriptorError: Error, Equatable, Sendable {
 }
 
 /// Reports a close request without confusing deferred cleanup with syscall success.
-package struct FileDescriptorCloseResult: Equatable, Sendable {
+public struct FileDescriptorCloseResult: Equatable, Sendable {
     /// Whether the runtime record has completed retirement.
-    package let progress: CloseProgress
+    public let progress: CloseProgress
     /// The saved Linux close error, available after the single attempt finishes.
-    package let errorCode: Int32?
+    public let errorCode: Int32?
 }
 
 /// Provides observable descriptor accounting without exposing a reusable raw number.
-package struct FileDescriptorSnapshot: Equatable, Sendable {
+public struct FileDescriptorSnapshot: Equatable, Sendable {
     /// Whether this storage still owns a descriptor number.
-    package let ownsDescriptor: Bool
+    public let ownsDescriptor: Bool
     /// The number of scoped raw-value borrows currently active.
-    package let activeBorrows: Int
+    public let activeBorrows: Int
     /// The number of close syscalls attempted by this storage.
-    package let closeAttempts: Int
+    public let closeAttempts: Int
     /// The result of the completed close syscall, or nil if none failed.
-    package let closeError: Int32?
+    public let closeError: Int32?
 }
 
 private struct DescriptorValue: Sendable {
@@ -92,7 +92,7 @@ final class DescriptorStorage {
 /// Implicit destruction requests the same cleanup as explicit close. Session close
 /// invalidates references even when this owner remains alive. This owner is not
 /// Sendable; transferring a raw number is a separate, explicitly unsafe operation.
-package struct OwnedFileDescriptor: ~Copyable {
+public struct OwnedFileDescriptor: ~Copyable {
     private let storage: DescriptorStorage
     private let owner: OwnedHandle
 
@@ -102,22 +102,22 @@ package struct OwnedFileDescriptor: ~Copyable {
     }
 
     /// Produces a copyable checked reference with no independent close authority.
-    package var borrowed: BorrowedFileDescriptor {
+    public var borrowed: BorrowedFileDescriptor {
         borrowing get { BorrowedFileDescriptor(storage: storage, reference: owner.reference) }
     }
 
     /// Provides a lifetime dependency for native consumers of this descriptor.
-    package var lifetime: ObjectHandle { borrowing get { owner.reference } }
+    public var lifetime: ObjectHandle { borrowing get { owner.reference } }
 
     /// Requests closure, deferring the single close syscall while a native frame is active.
     @discardableResult
-    package borrowing func requestClose() -> FileDescriptorCloseResult {
+    public borrowing func requestClose() -> FileDescriptorCloseResult {
         FileDescriptorCloseResult(progress: owner.requestClose(), errorCode: storage.snapshot().closeError)
     }
 
     /// Consumes the owner and requests closure; deferred results do not promise syscall success.
     @discardableResult
-    package consuming func close() -> FileDescriptorCloseResult {
+    public consuming func close() -> FileDescriptorCloseResult {
         let progress = owner.close()
         return FileDescriptorCloseResult(progress: progress, errorCode: storage.snapshot().closeError)
     }
@@ -128,7 +128,7 @@ package struct OwnedFileDescriptor: ~Copyable {
     /// contract. Transfer is rejected during a raw borrow or while dependent native
     /// consumers remain. On a throwing transfer this consumed owner's fallback
     /// cleanup still closes its descriptor. No await is permitted in this transaction.
-    @unsafe package consuming func takeRawDescriptor() throws -> Int32 {
+    @unsafe public consuming func takeRawDescriptor() throws -> Int32 {
         let reference = owner.reference
         return try reference.withAccess(matching: .fileDescriptor) {
             try storage.transfer { unsafe try reference.cell.control.relinquish(reference.cell) }
@@ -137,21 +137,21 @@ package struct OwnedFileDescriptor: ~Copyable {
 }
 
 /// Keeps descriptor bookkeeping alive without extending native usability after close.
-package struct BorrowedFileDescriptor {
+public struct BorrowedFileDescriptor {
     let storage: DescriptorStorage
     let reference: ObjectHandle
 
     /// Returns a conservative validity observation, not raw-access authorization.
-    package var isValid: Bool { reference.isValid }
+    public var isValid: Bool { reference.isValid }
 
     /// Exposes accounting even after the descriptor has been invalidated.
-    package var snapshot: FileDescriptorSnapshot { storage.snapshot() }
+    public var snapshot: FileDescriptorSnapshot { storage.snapshot() }
 
     /// Creates a distinct CLOEXEC descriptor owned by the same session.
     ///
     /// The original remains owned and unchanged. A registration failure closes the
     /// new duplicate. This operation does not make a copied raw integer durable.
-    package func duplicate() throws -> OwnedFileDescriptor {
+    public func duplicate() throws -> OwnedFileDescriptor {
         try reference.withAccess(matching: .fileDescriptor) {
             try storage.borrow { descriptor in
                 var error: Int32 = 0
@@ -167,7 +167,7 @@ package struct BorrowedFileDescriptor {
     /// The caller must not close, transfer, store, or send this integer to another
     /// task. The runtime preserves native lifetime through the complete scope and
     /// rejects transfer while it is borrowed. A throwing body releases its borrow.
-    @unsafe package func withUnsafeDescriptor<Result: ~Copyable>(_ body: (Int32) throws -> Result) throws -> Result {
+    @unsafe public func withUnsafeDescriptor<Result: ~Copyable>(_ body: (Int32) throws -> Result) throws -> Result {
         try reference.withAccess(matching: .fileDescriptor) { try storage.borrow(body) }
     }
 }
@@ -193,7 +193,7 @@ extension OwnershipSession {
     ///
     /// The caller must exclusively own a valid raw descriptor and retain its
     /// cleanup obligation on failure. Existing descriptor flags are preserved.
-    @unsafe package borrowing func adoptFileDescriptor(_ descriptor: Int32) throws -> OwnedFileDescriptor {
+    @unsafe public borrowing func adoptFileDescriptor(_ descriptor: Int32) throws -> OwnedFileDescriptor {
         unsafe try registerDescriptor(descriptor, control: control, consumeOnFailure: false)
     }
 
@@ -202,7 +202,7 @@ extension OwnershipSession {
     /// Use this for incoming native events and owned duplicates: session shutdown,
     /// capacity failure, and other registration failures must not leak the fd.
     /// The raw value must not already belong to another owner or runtime record.
-    @unsafe package borrowing func receiveFileDescriptor(_ descriptor: Int32) throws -> OwnedFileDescriptor {
+    @unsafe public borrowing func receiveFileDescriptor(_ descriptor: Int32) throws -> OwnedFileDescriptor {
         unsafe try registerDescriptor(descriptor, control: control, consumeOnFailure: true)
     }
 }
@@ -211,24 +211,30 @@ extension OwnershipSession {
 ///
 /// Dropping an ignored or partially decoded event closes this value's descriptor
 /// even when the session is already closed. No runtime or user context is retained.
-package struct ReceivedFileDescriptor: ~Copyable {
+public struct ReceivedFileDescriptor: ~Copyable {
     private var descriptor: Int32?
 
     /// Takes exclusive native ownership of a valid received descriptor.
     ///
     /// The native API must actually transfer ownership; borrowed descriptor numbers
     /// must never enter this constructor. Invalid input creates no owner.
-    @unsafe package init(adopting descriptor: Int32) throws {
+    @unsafe public init(adopting descriptor: Int32) throws {
         let error = wayland_runtime_descriptor_validate(descriptor)
         guard error == 0 else { throw FileDescriptorError.invalidDescriptor(error) }
         self.descriptor = descriptor
     }
 
+    /// Consumes an incoming native slot immediately, including later validation or admission failure.
+    ///
+    /// The caller must disarm the native slot before this handoff and transfer an
+    /// exclusive obligation. A nonnegative input is closed once unless registered.
+    @unsafe public init(receiving descriptor: Int32) { self.descriptor = descriptor }
+
     /// Consumes the receive scope and moves ownership into a session or closes on failure.
     ///
     /// Disarming before registration prevents fallback destruction from retrying
     /// a descriptor already consumed by a failed session registration.
-    package consuming func register(in session: borrowing OwnershipSession) throws -> OwnedFileDescriptor {
+    public consuming func register(in session: borrowing OwnershipSession) throws -> OwnedFileDescriptor {
         guard let value = descriptor else { throw FileDescriptorError.noOwnership }
         descriptor = nil
         return unsafe try session.receiveFileDescriptor(value)
@@ -236,5 +242,44 @@ package struct ReceivedFileDescriptor: ~Copyable {
 
     deinit {
         if let descriptor { _ = wayland_runtime_descriptor_close(descriptor) }
+    }
+}
+
+
+extension ObjectHandle {
+    /// Consumes a received descriptor through this reference's runtime on every outcome.
+    ///
+    /// The input must be an exclusively owned native handoff, never a borrowed or
+    /// already registered number. The caller must disarm its decode scope first.
+    @unsafe public func receiveFileDescriptor(_ descriptor: Int32) throws -> OwnedFileDescriptor {
+        unsafe try registerDescriptor(descriptor, control: cell.control, consumeOnFailure: true)
+    }
+}
+
+extension ReceivedFileDescriptor {
+    /// Moves an incoming descriptor into an existing checked runtime control.
+    public consuming func register(in reference: ObjectHandle) throws -> OwnedFileDescriptor {
+        guard let value = descriptor else { throw FileDescriptorError.noOwnership }
+        descriptor = nil
+        return unsafe try reference.receiveFileDescriptor(value)
+    }
+}
+
+extension BorrowedFileDescriptor {
+    /// Duplicates into another live runtime without transferring the original descriptor.
+    ///
+    /// Both domains are leased synchronously. The destination consumes the duplicate
+    /// on every publication outcome, including record-capacity failure.
+    public func duplicate(in destination: ObjectHandle) throws -> OwnedFileDescriptor {
+        try destination.withAccess {
+            try reference.withAccess(matching: .fileDescriptor) {
+                try storage.borrow { descriptor in
+                    var error: Int32 = 0
+                    let duplicate = unsafe wayland_runtime_descriptor_duplicate(descriptor, &error)
+                    guard duplicate >= 0 else { throw FileDescriptorError.duplicationFailed(error) }
+                    return unsafe try registerDescriptor(duplicate, control: destination.cell.control, consumeOnFailure: true)
+                }
+            }
+        }
     }
 }

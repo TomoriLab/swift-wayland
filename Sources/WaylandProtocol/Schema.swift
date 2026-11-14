@@ -1,5 +1,5 @@
 /// Describes the protocol argument's exact native representation.
-package enum ProtocolArgumentKind: String, Sendable {
+public enum ProtocolArgumentKind: String, Sendable {
     /// A signed 32-bit integer.
     case signed = "int"
     /// An unsigned 32-bit integer.
@@ -18,7 +18,7 @@ package enum ProtocolArgumentKind: String, Sendable {
     case descriptor = "fd"
 
     /// Accepts exactly the native schema type spellings and rejects unknown kinds.
-    package init?(rawValue: String) {
+    public init?(rawValue: String) {
         switch rawValue {
         case "int": self = .signed
         case "uint": self = .unsigned
@@ -32,81 +32,140 @@ package enum ProtocolArgumentKind: String, Sendable {
         }
     }
     /// Returns the current process's hash of this native type spelling.
-    package var hashValue: Int { rawValue.hashValue }
+    public var hashValue: Int { rawValue.hashValue }
     /// Combines the native type spelling into the caller's hasher.
-    package func hash(into hasher: inout Hasher) { rawValue.hash(into: &hasher) }
+    public func hash(into hasher: inout Hasher) { rawValue.hash(into: &hasher) }
 }
 
 /// Defines argument metadata without storing transient native pointers.
-package struct ProtocolArgumentSchema: Sendable {
+public struct ProtocolArgumentSchema: Equatable, Sendable {
     /// The source argument name.
-    package let name: String
+    public let name: String
     /// The exact native representation.
-    package let kind: ProtocolArgumentKind
+    public let kind: ProtocolArgumentKind
     /// Whether the schema permits a null value.
-    package let nullable: Bool
+    public let nullable: Bool
     /// The named native interface, when specified.
-    package let interface: String?
+    public let interface: String?
     /// The qualified enum reference, when specified.
-    package let enumeration: String?
+    public let enumeration: String?
+
+    /// Creates immutable value metadata without granting native descriptor authority.
+    ///
+    /// Native consumers must separately validate the complete descriptor bundle.
+    public init(name: String, kind: ProtocolArgumentKind, nullable: Bool, interface: String?, enumeration: String?) {
+        self.name = name
+        self.kind = kind
+        self.nullable = nullable
+        self.interface = interface
+        self.enumeration = enumeration
+    }
 }
 
 /// Describes a versioned request or event in source opcode order.
-package struct ProtocolMessageSchema: Sendable {
+public struct ProtocolMessageSchema: Equatable, Sendable {
     /// The source message name.
-    package let name: String
+    public let name: String
     /// The source-order opcode.
-    package let opcode: UInt32
+    public let opcode: UInt32
     /// The earliest interface version accepting this message.
-    package let since: UInt32
+    public let since: UInt32
     /// The version at which the message became deprecated, when specified.
-    package let deprecatedSince: UInt32?
+    public let deprecatedSince: UInt32?
     /// Whether the message consumes its protocol object's authority.
-    package let destructor: Bool
+    public let destructor: Bool
     /// Arguments in wire order, including generic constructor semantics.
-    package let arguments: [ProtocolArgumentSchema]
+    public let arguments: [ProtocolArgumentSchema]
+    /// The expanded libwayland signature validated before native argument indexing.
+    public var nativeSignature: String {
+        let codes: [ProtocolArgumentKind: String] = [.signed: "i", .unsigned: "u", .fixed: "f", .string: "s", .object: "o", .newIdentifier: "n", .array: "a", .descriptor: "h"]
+        return (since > 1 ? String(since) : "") + arguments.map { argument in
+            (argument.kind == .newIdentifier && argument.interface == nil ? "su" : "") + (argument.nullable ? "?" : "") + codes[argument.kind]!
+        }.joined()
+    }
     /// Rejects sending the message through an older negotiated interface version.
-    package func requireAvailable(version: UInt32) throws {
+    public func requireAvailable(version: UInt32) throws {
         guard version >= since else { throw ProtocolSchemaError.unsupportedVersion }
+    }
+
+    /// Creates immutable value metadata without granting native descriptor authority.
+    ///
+    /// Native consumers must separately validate the complete descriptor bundle.
+    public init(name: String, opcode: UInt32, since: UInt32, deprecatedSince: UInt32?, destructor: Bool, arguments: [ProtocolArgumentSchema]) {
+        self.name = name
+        self.opcode = opcode
+        self.since = since
+        self.deprecatedSince = deprecatedSince
+        self.destructor = destructor
+        self.arguments = arguments
     }
 }
 
 /// Describes an enum entry while preserving all 32 native value bits.
-package struct ProtocolEnumEntry: Sendable {
+public struct ProtocolEnumEntry: Equatable, Sendable {
     /// The native source spelling.
-    package let name: String
+    public let name: String
     /// The 32-bit native representation, including negative signed values.
-    package let value: UInt32
+    public let value: UInt32
     /// The entry's introduction version.
-    package let since: UInt32
+    public let since: UInt32
+
+    /// Creates immutable value metadata without granting native descriptor authority.
+    ///
+    /// Native consumers must separately validate the complete descriptor bundle.
+    public init(name: String, value: UInt32, since: UInt32) {
+        self.name = name
+        self.value = value
+        self.since = since
+    }
 }
 
 /// Describes a protocol enum without rejecting future unknown values.
-package struct ProtocolEnumSchema: Sendable {
+public struct ProtocolEnumSchema: Equatable, Sendable {
     /// The native source spelling.
-    package let name: String
+    public let name: String
     /// Whether values combine as a bitfield.
-    package let bitfield: Bool
+    public let bitfield: Bool
     /// Entries in source order.
-    package let entries: [ProtocolEnumEntry]
+    public let entries: [ProtocolEnumEntry]
+
+    /// Creates immutable value metadata without granting native descriptor authority.
+    ///
+    /// Native consumers must separately validate the complete descriptor bundle.
+    public init(name: String, bitfield: Bool, entries: [ProtocolEnumEntry]) {
+        self.name = name
+        self.bitfield = bitfield
+        self.entries = entries
+    }
 }
 
 /// Holds one complete immutable interface schema.
-package struct ProtocolInterfaceSchema: Sendable {
+public struct ProtocolInterfaceSchema: Equatable, Sendable {
     /// The native interface name.
-    package let name: String
+    public let name: String
     /// The maximum supported version in the pinned source.
-    package let version: UInt32
+    public let version: UInt32
     /// Client requests in opcode order.
-    package let requests: [ProtocolMessageSchema]
+    public let requests: [ProtocolMessageSchema]
     /// Server events in opcode order.
-    package let events: [ProtocolMessageSchema]
+    public let events: [ProtocolMessageSchema]
     /// Native enums and all their entries.
-    package let enumerations: [ProtocolEnumSchema]
+    public let enumerations: [ProtocolEnumSchema]
+
+    /// Creates immutable value metadata without granting native descriptor authority.
+    ///
+    /// Native consumers must separately validate the complete descriptor bundle.
+    public init(name: String, version: UInt32, requests: [ProtocolMessageSchema], events: [ProtocolMessageSchema], enumerations: [ProtocolEnumSchema]) {
+        self.name = name
+        self.version = version
+        self.requests = requests
+        self.events = events
+        self.enumerations = enumerations
+    }
 }
 
 /// Describes a schema validation failure before native marshalling.
-package enum ProtocolSchemaError: Error, Equatable, Sendable {
+public enum ProtocolSchemaError: Error, Equatable, Sendable {
     /// The message is newer than the negotiated object version.
     case unsupportedVersion
 }

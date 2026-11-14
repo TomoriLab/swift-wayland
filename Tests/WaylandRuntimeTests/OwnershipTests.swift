@@ -184,3 +184,16 @@ enum BodyFailure: Error { case expected }
     #expect(log.values.isEmpty)
     #expect(try control.snapshot().acquisitions == 0)
 }
+
+extension DescriptorAndCallbackTests {
+    @Test func surrenderingChildAuthorityKeepsRootRecordUntilShutdown() throws {
+        let session = try OwnershipSession()
+        let counter = ReleaseLog()
+        let owner = unsafe try session.adopt(nativeIdentifier: 9001, kind: .serverClient) { counter.values.append(1) }
+        let reference = owner.surrenderToRoot()
+        #expect(reference.isValid && counter.values.isEmpty)
+        session.requestClose()
+        #expect(!reference.isValid && counter.values == [1])
+        #expect(try session.snapshot().retainedRecords == 0)
+    }
+}

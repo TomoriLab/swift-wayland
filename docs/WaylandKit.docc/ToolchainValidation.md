@@ -4,7 +4,7 @@ Establish compiler and native ABI evidence before implementing the ownership run
 
 ## Milestone and scope
 
-Implementation has been authorized in stages. This milestone adds a reproducible compiler harness and isolated executable experiments under Tests/Toolchain. It does not expose a production Swift package or native wrapper API. Phase 1 host validation is distinct from the two-architecture phase 1 exit gate.
+Implementation has been authorized in stages. This milestone adds a reproducible compiler harness and isolated executable experiments under Tests/Toolchain. Those isolated probes remain separate from the production Swift package and native wrapper APIs now implemented. Phase 1 host validation is distinct from the two-architecture phase 1 exit gate.
 
 The verified host is x86_64 Linux with Swift 6.4.2 (swift-6.4.2-RELEASE). Client, server, and cursor pkg-config modules report 1.26.0. The EGL pkg-config module reports 18.1.0; that metadata uses its own version and is not rewritten as 1.26.0. The installed cross SDK is swift-6.3.3-RELEASE_static-linux-0.1.0 and cannot establish Swift 6.4.2 aarch64 compatibility. aarch64 remains unverified.
 

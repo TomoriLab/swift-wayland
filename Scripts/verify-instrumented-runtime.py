@@ -47,7 +47,7 @@ def main():
         if mode == 'address':
             # Both DSOs deliberately export the same protocol globals. Preloading one
             # instrumented DSO at a time preserves native interposition and ODR checks.
-            local['LD_PRELOAD'] = str(prefix / ('libwayland-' + variant + '.so.0'))
+            local['LD_PRELOAD'] = ':'.join(str(prefix / name) for name in ['libwayland-' + variant + '.so.0', 'libwayland-cursor.so.0', 'libwayland-egl.so.1'])
         else:
             local['LD_LIBRARY_PATH'] = str(prefix)
         local['LD_DEBUG'] = 'libs'
@@ -57,6 +57,7 @@ def main():
                                     stdout=stream, stderr=subprocess.STDOUT)
         contents = log.read_text()
         expected = [str(prefix / ('libwayland-' + name + '.so.0')) for name in (['client', 'server'] if variant == 'both' else [variant])]
+        expected += [str(prefix / 'libwayland-cursor.so.0'), str(prefix / 'libwayland-egl.so.1')]
         if result.returncode != 0 or 'Test run with' not in contents or 'passed after' not in contents:
             raise RuntimeError('Instrumented native test failed; inspect ' + str(log))
         if not all(any('calling init: ' + path in line for line in contents.splitlines()) for path in expected):

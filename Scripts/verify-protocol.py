@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Cross-check Swift schema metadata against the independent native scanner."""
 import importlib.util
+import json
+import tempfile
 import re
 import sys
 sys.dont_write_bytecode = True
@@ -66,6 +68,57 @@ class InvalidProtocolTests(unittest.TestCase):
         model = self.parse('<enum name="code"><entry name="negative" value="-1"/><entry name="future" value="0xffffffff"/></enum>')
         self.assertEqual([entry['value'] for entry in model['interfaces'][0]['enumerations'][0]['entries']], [0xffffffff, 0xffffffff])
 
+class ImportedProtocolTests(unittest.TestCase):
+    first = b'<protocol name="first"><interface name="alpha" version="2"><request name="create"><arg name="identifier" type="new_id" interface="beta"/></request><enum name="mode"><entry name="one" value="1"/></enum></interface></protocol>'
+    second = b'<protocol name="second"><interface name="beta" version="1"><event name="reference"><arg name="parent" type="object" interface="alpha"/><arg name="mode" type="uint" enum="alpha.mode"/></event></interface></protocol>'
+
+    def test_cross_file_cycles_and_enums(self):
+        model = generator.parse_bundle([self.first, self.second])
+        self.assertEqual([interface['name'] for interface in model['interfaces']], ['alpha', 'beta'])
+        self.assertEqual(model['interfaces'][1]['events'][0]['arguments'][1]['enumeration'], 'alpha.mode')
+        self.assertEqual(model, generator.parse_bundle([self.first, self.second]))
+        self.assertNotEqual(model['sha256'], generator.parse_bundle([self.second, self.first])['sha256'])
+
+    def test_missing_duplicate_and_invalid_imports(self):
+        for documents in [[self.first], [self.first, self.first], [], [self.first] * 65,
+                          [self.first, self.second.replace(b'alpha.mode', b'alpha.missing')],
+                          [self.first, self.second.replace(b'type="object"', b'type="uint"')],
+                          [self.first, self.second.replace(b'<event name="reference">', b'<event name="reference" unknown="true">')]]:
+            with self.assertRaises(ValueError): generator.parse_bundle(documents)
+
+    def test_native_integer_and_constructor_limits(self):
+        for body in [b'<protocol name="test"><interface name="test" version="2147483648"/></protocol>',
+                     b'<protocol name="test"><interface name="test" version="1"><event name="create"><arg name="identifier" type="new_id"/></event></interface></protocol>']:
+            with self.assertRaises(ValueError): generator.parse(body)
+
+    def test_cli_and_external_module_compilation(self):
+        with tempfile.TemporaryDirectory(prefix='protocol-import-') as temporary:
+            directory = Path(temporary)
+            first = directory / 'first.xml'; first.write_bytes(self.first)
+            second = directory / 'second.xml'; second.write_bytes(self.second)
+            command = ['python3', str(ROOT/'Scripts/generate-protocol.py'), '--xml', str(first),
+                       '--import', str(second), '--output-directory', str(directory), '--namespace', 'ImportedProtocol']
+            subprocess.run(command, check=True, capture_output=True)
+            subprocess.run(command + ['--check'], check=True, capture_output=True)
+            self.assertEqual(len(json.loads((directory/'protocol-manifest.json').read_text())['inputs']), 2)
+            specification = importlib.util.spec_from_file_location('toolchain_imports', ROOT/'Scripts/verify-toolchain.py')
+            toolchain = importlib.util.module_from_spec(specification); specification.loader.exec_module(toolchain)
+            compiler = toolchain.compiler_path(None)
+            flags = [compiler, '-swift-version', '6', '-strict-memory-safety', '-warnings-as-errors', '-parse-as-library', '-emit-module']
+            subprocess.run([*flags, '-module-name', 'WaylandProtocol', str(ROOT/'Sources/WaylandProtocol/Schema.swift'),
+                            '-o', str(directory/'WaylandProtocol.swiftmodule')], check=True, capture_output=True)
+            result = subprocess.run([*flags, '-module-name', 'ImportedProtocol', '-I', str(directory),
+                            str(directory/'ImportedProtocol.swift'), '-o', str(directory/'ImportedProtocol.swiftmodule')], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for source in [first, second]:
+                native_path = source.with_suffix('.c')
+                subprocess.run(['wayland-scanner', 'private-code', str(source), str(native_path)], check=True, capture_output=True)
+                native = native_path.read_text()
+                interface = generator.parse_bundle([self.first, self.second])['interfaces'][0 if source == first else 1]
+                for direction in ['requests', 'events']:
+                    for message in interface[direction]:
+                        self.assertIn('"' + message['name'] + '", "' + signature(message) + '"', native)
+
 def signature(message):
     value = str(message['since']) if message['since'] > 1 else ''
     codes = {'int': 'i', 'uint': 'u', 'fixed': 'f', 'string': 's', 'object': 'o', 'new_id': 'n', 'array': 'a', 'fd': 'h'}
@@ -76,9 +129,10 @@ def signature(message):
     return value
 
 def main():
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(InvalidProtocolTests)
+    suite = unittest.TestSuite([unittest.defaultTestLoader.loadTestsFromTestCase(case) for case in [InvalidProtocolTests, ImportedProtocolTests]])
     if not unittest.TextTestRunner().run(suite).wasSuccessful(): return 1
     subprocess.run(['python3', str(ROOT / 'Scripts/generate-protocol.py'), '--check'], check=True)
+    subprocess.run(['python3', str(ROOT / 'Scripts/generate-typed-protocol.py'), '--check'], check=True)
     output = ROOT / '.build/native-protocol.c'
     subprocess.run(['wayland-scanner', 'private-code', str(ROOT / 'Protocols/wayland.xml'), str(output)], check=True)
     native = output.read_text()
