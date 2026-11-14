@@ -4,7 +4,7 @@ Track server display, client, resource, and idle-source lifetimes through one na
 
 ## Overview
 
-The initial package-access slice uses native destroy watches and authoritative cleanup records. Client disconnect invalidates tracked resources before native cascading destruction completes. Native callbacks retain storage through outer event-loop frame quiescence. Full compositor APIs and complete native coverage are not yet implemented. Read <doc:ClientAndServer> and <doc:ImplementationProgress> for exact boundaries.
+The initial package-access slice uses native destroy watches and authoritative cleanup records. Client disconnect invalidates tracked resources before native cascading destruction completes. Native callbacks retain storage through outer event-loop frame quiescence. Full compositor APIs and complete native coverage are not yet implemented. Read [ClientAndServer](https://tomorilab.github.io/swift-wayland/documentation/project/clientandserver) and [ImplementationProgress](https://tomorilab.github.io/swift-wayland/documentation/project/implementationprogress) for exact boundaries.
 
 ## Topics
 
@@ -29,9 +29,3 @@ The initial package-access slice uses native destroy watches and authoritative c
 - ``ServerDynamicIdentifier``
 - ``ServerRequestSubscription``
 - ``ServerProtocolError``
-
-### Contracts and verification
-
-- <doc:ClientAndServer>
-- <doc:TypedProtocol>
-- <doc:ImplementationProgress>

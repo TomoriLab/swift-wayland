@@ -58,18 +58,19 @@ def main():
     report = {'inputs': hashes, 'modules': {}}
     archives = []
     with tempfile.TemporaryDirectory(prefix='inputs-', dir=output) as temporary:
-        for module in MODULES:
+        for module in [*MODULES, 'Project']:
             directory = Path(temporary) / module
             directory.mkdir()
             module_catalog = directory / (module + '.docc')
             module_catalog.mkdir()
             for source in catalog.iterdir():
-                if source.stem in MODULES and source.stem != module: continue
+                if module != 'Project' and source.stem != module: continue
+                if module == 'Project' and source.stem in MODULES: continue
                 if source.is_dir(): shutil.copytree(source, module_catalog / source.name)
                 else: shutil.copy2(source, module_catalog / source.name)
             symbols_directory = directory / 'symbols'
             symbols_directory.mkdir()
-            module_graphs = [graphs / (module + '.symbols.json'), *sorted(graphs.glob(module + '@*.symbols.json'))]
+            module_graphs = [] if module == 'Project' else [graphs / (module + '.symbols.json'), *sorted(graphs.glob(module + '@*.symbols.json'))]
             symbols_by_identifier = {}
             for graph in module_graphs:
                 graph_data = json.loads(graph.read_text())
@@ -98,7 +99,7 @@ def main():
             dependencies = {'WaylandClient': ['WaylandRuntime', 'WaylandProtocol'], 'WaylandServer': ['WaylandRuntime', 'WaylandProtocol'],
                             'WaylandCursor': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient'],
                             'WaylandEGL': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient'], 'WaylandUtilities': ['WaylandRuntime'], 'WaylandKit': ['WaylandRuntime', 'WaylandProtocol', 'WaylandClient']}
-            for dependency in dependencies.get(module, []):
+            for dependency in (MODULES if module == 'Project' else dependencies.get(module, [])):
                 command += ['--dependency', str(output / (dependency + '.doccarchive'))]
             subprocess.run(command, cwd=ROOT, env=environment, check=True)
             pages = list((archive / 'data/documentation').rglob('*.json'))
@@ -120,11 +121,11 @@ def main():
         # The package landing page lives at /documentation, including under a repository base path.
         (combined / 'index.html').write_text(
             '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-            '<meta http-equiv="refresh" content="0; url=documentation/">'
+            '<meta http-equiv="refresh" content="0; url=documentation/project/">'
             '<title>WaylandKit Documentation</title></head><body>'
-            '<a href="documentation/">WaylandKit Documentation</a></body></html>\n')
+            '<a href="documentation/project/">WaylandKit Documentation</a></body></html>\n')
         (combined / '.nojekyll').touch()
-        if not (combined / 'documentation/index.html').is_file():
+        if not (combined / 'documentation/project/index.html').is_file():
             raise RuntimeError('The static documentation landing page is missing.')
         report['hostingBasePath'] = arguments.hosting_base_path
     report['symbols'] = sum(module['symbols'] for module in report['modules'].values())

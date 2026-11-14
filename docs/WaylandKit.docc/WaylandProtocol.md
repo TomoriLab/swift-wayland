@@ -4,7 +4,7 @@ Describe the pinned core protocol with deterministic, version-checked Swift sche
 
 ## Overview
 
-The generated metadata preserves all 23 core interfaces and 134 requests/events. The host generator validates the XML and compares message names, opcode order, and expanded signatures against wayland-scanner. This module contains shared schemas, interface markers, exact fixed-point values, and open enum wrappers. Executable typed methods and ownership decoders live in WaylandClient and WaylandServer; see <doc:TypedProtocol>.
+The generated metadata preserves all 23 core interfaces and 134 requests/events. The host generator validates the XML and compares message names, opcode order, and expanded signatures against wayland-scanner. This module contains shared schemas, interface markers, exact fixed-point values, and open enum wrappers. Executable typed methods and ownership decoders live in WaylandClient and WaylandServer; see [TypedProtocol](https://tomorilab.github.io/swift-wayland/documentation/project/typedprotocol).
 
 ## Topics
 
@@ -23,9 +23,3 @@ The generated metadata preserves all 23 core interfaces and 134 requests/events.
 - ``ProtocolEnumSchema``
 - ``ProtocolEnumEntry``
 - ``ProtocolSchemaError``
-
-### Generation and coverage
-
-- <doc:ProtocolGeneration>
-- <doc:TypedProtocol>
-- <doc:ImplementationProgress>
