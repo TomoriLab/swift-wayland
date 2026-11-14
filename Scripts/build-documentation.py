@@ -45,8 +45,16 @@ def main():
         return {str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     hashes=input_snapshot()
     compiler_flags = native_compiler_flags(environment)
-    subprocess.run([str(swift), 'package', *compiler_flags, 'dump-symbol-graph', '--minimum-access-level', 'package'], cwd=ROOT, env=environment, check=True)
-    graphs = ROOT / '.build/out/symbolgraph'
+    # Swift 6.4.2 Swift Build drops explicit include flags in C ExtractAPI tasks.
+    # The native backend emits the Swift graphs required here without those tasks.
+    build_options = ['--build-system', 'native', '--scratch-path', str(ROOT / '.build/documentation-native')]
+    subprocess.run([str(swift), 'build', *build_options, *compiler_flags, '--build-tests'],
+                   cwd=ROOT, env=environment, check=True)
+    subprocess.run([str(swift), 'package', *build_options, *compiler_flags, 'dump-symbol-graph',
+                    '--minimum-access-level', 'package', '--emit-extension-block-symbols'], cwd=ROOT, env=environment, check=True)
+    binary_directory = Path(subprocess.check_output(
+        [str(swift), 'build', *build_options, '--show-bin-path'], cwd=ROOT, env=environment, text=True).strip())
+    graphs = binary_directory.parent / 'symbolgraph'
     report = {'inputs': hashes, 'modules': {}}
     archives = []
     with tempfile.TemporaryDirectory(prefix='inputs-', dir=output) as temporary:

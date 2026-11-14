@@ -32,6 +32,8 @@ jobs:
             .build/typed-benchmark.json
             .build/protocol-fuzz.json
             .build/shm-faults/
+            .build/bridge-allocation-faults/run.log
+            .build/bridge-allocation-faults/report.json
             .build/native-*-verification.json
             .build/proxy-*.log
           include-hidden-files: true

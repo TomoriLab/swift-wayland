@@ -20,7 +20,7 @@ specification=importlib.util.spec_from_file_location('toolchain',ROOT/'Scripts/v
 toolchain=importlib.util.module_from_spec(specification);specification.loader.exec_module(toolchain)
 swift=Path(toolchain.compiler_path(None)).with_name('swift')
 environment=os.environ.copy()
-for name in ['LD_PRELOAD','LD_LIBRARY_PATH','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP']:environment.pop(name,None)
+for name in ['LD_PRELOAD','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP']:environment.pop(name,None)
 with (ROOT/'.build/phase7-benchmark-build.log').open('w') as output:
     subprocess.run([str(swift),'build','-c','release','--product','WaylandTypedBenchmarks','-Xswiftc','-warnings-as-errors'],
                    cwd=ROOT,env=environment,stdout=output,stderr=subprocess.STDOUT,check=True)

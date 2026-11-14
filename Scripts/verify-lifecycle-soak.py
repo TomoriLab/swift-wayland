@@ -18,7 +18,7 @@ toolchain=importlib.util.module_from_spec(specification);specification.loader.ex
 swift=Path(toolchain.compiler_path(None)).with_name('swift')
 output=ROOT/('.build/lifecycle-'+arguments.sanitizer);output.mkdir(parents=True,exist_ok=True)
 environment=os.environ.copy()
-for name in ['LD_PRELOAD','LD_LIBRARY_PATH','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP','LSAN_OPTIONS']:environment.pop(name,None)
+for name in ['LD_PRELOAD','CC','CXX','CPP','LD','AR','NM','RANLIB','STRIP','LSAN_OPTIONS']:environment.pop(name,None)
 environment['ASAN_OPTIONS']='detect_leaks=1:halt_on_error=1:exitcode=23'
 environment['TSAN_OPTIONS']='halt_on_error=1:exitcode=66'
 scratch=ROOT/('.build/soak-'+arguments.sanitizer)

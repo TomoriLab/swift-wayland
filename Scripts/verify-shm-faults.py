@@ -18,7 +18,7 @@ command=[str(compiler),'-g','-O1','-fsanitize=address,undefined','-fno-omit-fram
          '-lwayland-client','-lwayland-server','-o',str(binary)]
 subprocess.run(command,check=True)
 environment=os.environ.copy()
-for name in ['LD_PRELOAD','LD_LIBRARY_PATH','LSAN_OPTIONS']:environment.pop(name,None)
+for name in ['LD_PRELOAD','LSAN_OPTIONS']:environment.pop(name,None)
 environment['ASAN_OPTIONS']='detect_leaks=1:halt_on_error=1'
 environment['UBSAN_OPTIONS']='halt_on_error=1:print_stacktrace=1'
 results=[]

@@ -36,12 +36,14 @@ for source in sources:
 binary = output / 'bridge-allocation-faults'
 subprocess.run([str(compiler), *flags, str(fixture), *objects, '-lwayland-server', '-o', str(binary)], check=True)
 environment = os.environ.copy()
-for name in ['LD_PRELOAD', 'LD_LIBRARY_PATH', 'LSAN_OPTIONS']: environment.pop(name, None)
+for name in ['LD_PRELOAD', 'LSAN_OPTIONS']: environment.pop(name, None)
 environment['ASAN_OPTIONS'] = 'detect_leaks=1:halt_on_error=1'
 environment['UBSAN_OPTIONS'] = 'halt_on_error=1:print_stacktrace=1'
 result = subprocess.run([str(binary)], env=environment, capture_output=True, text=True)
 (output / 'run.log').write_text(result.stdout + result.stderr)
-if result.returncode: raise RuntimeError('Bridge allocation fault validation failed; inspect ' + str(output / 'run.log'))
+if result.returncode:
+    print(result.stdout + result.stderr, flush=True)
+    raise RuntimeError('Bridge allocation fault validation failed; inspect ' + str(output / 'run.log'))
 if hashes != {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}:
     raise RuntimeError('Bridge fault inputs changed during validation.')
 (output / 'report.json').write_text(json.dumps({'passed': True, 'injectedFailures': int(re.search(r'PASS: (\d+)', result.stdout)[1]), 'inputs': hashes,

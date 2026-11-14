@@ -57,3 +57,7 @@ python3 Scripts/build-documentation.py --hosting-base-path /swift-wayland
 ```
 
 The output is `.build/documentation/WaylandKit.doccarchive`. Serve its parent with the archive mounted at `/swift-wayland/` to verify repository-relative URLs. Omit `--hosting-base-path` for the ordinary unmodified archive build. See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) and [Swift-DocC hosting guidance](https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin/generating-documentation-for-hosting-online/).
+
+## Swift 6.4.2 documentation backend
+
+Documentation builds use the deprecated native SwiftPM backend in `.build/documentation-native` as a version-specific workaround for Swift Build C API extraction dropping include paths. Test modules are built before symbol extraction because the native package graph includes discovered test modules. The normal test and validation package builds retain the default Swift Build backend. Remove this workaround when the pinned toolchain can extract C headers with the configured native include paths.

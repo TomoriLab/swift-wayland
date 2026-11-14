@@ -19,7 +19,7 @@ toolchain = importlib.util.module_from_spec(specification)
 specification.loader.exec_module(toolchain)
 swift = Path(toolchain.compiler_path(None)).with_name('swift')
 environment = os.environ.copy()
-for name in ['LD_PRELOAD', 'LD_LIBRARY_PATH', 'CC', 'CXX', 'CPP', 'LD', 'AR', 'NM', 'RANLIB', 'STRIP']:
+for name in ['LD_PRELOAD', 'CC', 'CXX', 'CPP', 'LD', 'AR', 'NM', 'RANLIB', 'STRIP']:
     environment.pop(name, None)
 
 
