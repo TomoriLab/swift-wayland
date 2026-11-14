@@ -1,19 +1,211 @@
-# Build a typed Wayland client
+# Getting started with WaylandKit
 
-Connect to a compositor through the public client-first WaylandKit product.
+Build a client that discovers a compositor, creates an unmapped surface, and shuts down with checked resource retirement.
 
 ## Requirements
 
-Use Swift 6.4.2 in Swift 6 language mode on Linux with the libwayland 1.26.0 development headers and libraries. The default product links the client and common runtime targets. Server, cursor, EGL, and utility products are separate opt-in dependencies. aarch64 verification remains deferred; current executable evidence is x86_64.
-
-The repository contains a standalone consumer at Examples/Registry. Its Package.swift depends on the local repository through `.package(path: "../..")`. The consumer imports WaylandKit without package access or @testable import. This verifies that the APIs are usable outside the defining package. For another project, set the local dependency path to that project's actual checkout location and select the WaylandKit product.
+Use Swift 6.4.2 in Swift 6 language mode on x86_64 Linux with libwayland 1.26.0 development headers, libraries, pkg-config metadata, and wayland-scanner. Other Swift releases are not the verified baseline. aarch64 verification remains deferred. A real Wayland compositor is required for the desktop-session walkthrough; the paired server example below provides a separate control-plane test without a desktop session.
 
 ```sh
-source ~/.zshrc
+swift --version
+pkg-config --modversion wayland-client wayland-server wayland-cursor wayland-egl
+wayland-scanner --version
+```
+
+The compiler must report Swift 6.4.2. The native components must match the pinned libwayland baseline. If the libraries are installed outside the default search paths, configure PKG_CONFIG_PATH for their `.pc` files and LD_LIBRARY_PATH for their shared libraries. The package's system-library targets obtain build paths from pkg-config.
+
+## Add the package
+
+Create a separate executable package. Replace `/absolute/path/to/swift-wayland` with the checkout location. A local dependency makes this walkthrough reproducible against the source being reviewed without assuming a published release tag.
+
+```sh
+mkdir RegistryExample
+cd RegistryExample
+swift package init --type executable --name RegistryExample
+```
+
+Replace Package.swift with:
+
+```swift
+// swift-tools-version: 6.4
+import PackageDescription
+let package = Package(
+    name: "RegistryExample",
+    dependencies: [.package(path: "/absolute/path/to/swift-wayland")],
+    targets: [.executableTarget(name: "RegistryExample", dependencies: [.product(name: "WaylandKit", package: "swift-wayland")],
+                                swiftSettings: [.strictMemorySafety()])],
+    swiftLanguageModes: [.v6]
+)
+```
+
+Replace the generated executable source with the complete client below. Keep only one entry point in the executable target. `import WaylandKit` exposes the client facade, protocol value types, and ownership runtime. Server, cursor, EGL, and utility APIs have separate products and imports; see <doc:Project> for their roles.
+
+## Discover globals and create a surface
+
+```swift
+import WaylandKit
+
+private final class RegistrySnapshot {
+    var globals: [String: (UInt32, UInt32)] = [:]
+    var synchronized = false
+}
+@main struct RegistryExample {
+    static func main() throws {
+        let connection = try ClientConnection()
+        let registry = try connection.protocolDisplay().getRegistry()
+        let observed = RegistrySnapshot()
+        let subscription = try registry.onEvent { event in
+            switch consume event {
+            case .global(let name, let interface, let version): observed.globals[interface] = (name, version)
+            case .globalRemove: break
+            }
+        }
+        let synchronization = try connection.protocolDisplay().sync()
+        let synchronized = try synchronization.onEvent { event in
+            switch consume event { case .done: observed.synchronized = true }
+        }
+        let cancellation = try ReadCancellation()
+        try connection.flush()
+        for _ in 0..<10 where !observed.synchronized {
+            _ = try connection.dispatchOnce(timeoutMilliseconds: 1_000, cancellation: cancellation)
+        }
+        guard observed.synchronized else { throw ExampleError.timeout }
+        guard let (name, advertised) = observed.globals[WlCompositor.interfaceName] else { throw ExampleError.missingCompositor }
+        let version = min(advertised, WlCompositor.schema.version)
+        let compositor = try registry.reference.bind(name: name, as: WlCompositor.self, version: version, advertisedVersion: advertised)
+        let surface = try compositor.reference.createSurface()
+        try surface.reference.commit()
+        try surface.destroy()
+        try connection.flush()
+        withExtendedLifetime(subscription) {}
+        withExtendedLifetime(synchronized) {}
+        connection.requestClose()
+        let snapshot = try connection.snapshot()
+        guard snapshot.retainedRecords == 0 else { throw ExampleError.incompleteCleanup }
+        print("Observed \(observed.globals.count) interface names; sync completed; unmapped surface created and destroyed; all ownership records retired.")
+    }
+    enum ExampleError: Error { case timeout, missingCompositor, incompleteCleanup }
+}
+```
+
+The client proceeds through these stages:
+
+1. `ClientConnection()` connects using WAYLAND_DISPLAY and XDG_RUNTIME_DIR. Run it as the user who owns the compositor session.
+2. `getRegistry()` constructs a registry proxy. The retained subscription records advertised interface names, global identifiers, and versions.
+3. `sync()` inserts a synchronization request after registry acquisition. Its `done` event marks completion of the initial registry enumeration. The client flushes and dispatches with bounded waits instead of assuming events arrive immediately.
+4. The client selects the lower of the advertised compositor version and the binding's supported version. `bind` receives both the requested and advertised versions for validation.
+5. `createSurface()` returns an owning object. Requests use its checked `reference`; `destroy()` consumes the destruction authority.
+6. `requestClose()` retires the root session. A final snapshot checks that no tracked cleanup records remain.
+
+`RegistrySnapshot` is mutable state owned by this synchronous example. It does not confer Sendable access to a connection. The one-shot discovery example intentionally ignores global removal; a long-running client must remove globals when `globalRemove` arrives and handle unavailable capabilities.
+
+No buffer is attached to this surface and no window role is assigned. The example therefore creates no visible window. Visible application windows additionally require a shell protocol such as xdg-shell, buffer allocation, configure/ack handling, and compositor-specific integration. This walkthrough does not implement those steps.
+
+## Run against the desktop session
+
+From the standalone package directory:
+
+```sh
+swift run -Xswiftc -warnings-as-errors
+```
+
+From the WaylandKit checkout, the maintained copy runs with:
+
+```sh
 swift run --package-path Examples/Registry -Xswiftc -warnings-as-errors
 ```
 
-The example connects using native WAYLAND_DISPLAY/XDG_RUNTIME_DIR lookup. It observes the registry, waits for a synchronization callback with bounded poll operations, binds wl_compositor at a supported advertised version, creates an unmapped surface, commits it without a buffer, destroys it, and closes the connection. It creates no visible window. Missing compositor access, timeout, and native errors propagate as Swift errors.
+Expected success output has this form; the interface count depends on the compositor:
+
+```text
+Observed N interface names; sync completed; unmapped surface created and destroyed; all ownership records retired.
+```
+
+The client allows up to ten one-second dispatch waits for the initial synchronization. Missing socket access, native connection errors, absent wl_compositor, timeout, and incomplete cleanup propagate as errors. A successful run confirms the control-plane lifecycle, not rendering or input handling.
+
+## Run a paired server without a desktop session
+
+The repository includes a minimal public server consumer. It announces wl_compositor version 1, accepts typed surface constructors, and waits for surface destruction. It does not render or implement a general compositor. Run both maintained examples through the harness:
+
+```sh
+python3 Scripts/verify-examples.py
+```
+
+The harness builds the standalone packages, creates a private temporary XDG_RUNTIME_DIR, reads the server's socket name, launches the client with WAYLAND_DISPLAY set to that socket, and waits for both processes. Its report at `.build/examples-report.json` contains `passed: true` only after both consumers succeed and the socket and lock files are removed.
+
+The complete server source is:
+
+```swift
+import Foundation
+import WaylandServer
+import WaylandProtocol
+
+private final class CompositorOwner {
+    let owner: ServerObject<WlCompositor>
+    let subscription: ServerRequestSubscription
+    init(owner: consuming ServerObject<WlCompositor>, subscription: consuming ServerRequestSubscription) {
+        self.owner = owner; self.subscription = subscription
+    }
+}
+private final class SurfaceOwner {
+    let owner: ServerObject<WlSurface>
+    let subscription: ServerRequestSubscription
+    init(owner: consuming ServerObject<WlSurface>, subscription: consuming ServerRequestSubscription) {
+        self.owner = owner; self.subscription = subscription
+    }
+}
+private final class ServerApplication {
+    let display: ServerDisplay
+    var compositors: [CompositorOwner] = []
+    var surfaces: [SurfaceOwner] = []
+    var completed = false
+    init() throws { display = try ServerDisplay() }
+    func bind(_ identifier: consuming ServerNewIdentifier<WlCompositor>) throws {
+        let owner = try identifier.accept()
+        let subscription = try owner.onRequest { [weak self] request in
+            guard let self else { return }
+            switch consume request {
+            case .createSurface(let identifier):
+                let surface = try identifier.accept()
+                let subscription = try surface.onRequest { [weak self] request in
+                    switch consume request {
+                    case .commit: break
+                    case .destroy: self?.completed = true
+                    default: throw ServerExampleError.unsupportedRequest
+                    }
+                }
+                self.surfaces.append(SurfaceOwner(owner: surface, subscription: subscription))
+            default: throw ServerExampleError.unsupportedRequest
+            }
+        }
+        compositors.append(CompositorOwner(owner: owner, subscription: subscription))
+    }
+    enum ServerExampleError: Error { case unsupportedRequest, timeout, incompleteCleanup }
+}
+@main struct MinimalServer {
+    static func main() throws {
+        let application = try ServerApplication()
+        let global = try application.display.addGlobal(as: WlCompositor.self, version: 1) { [weak application] identifier in
+            guard let application else { return }
+            try application.bind(identifier)
+        }
+        let socket = try application.display.addAutomaticSocket()
+        FileHandle.standardOutput.write(Data((socket + "\n").utf8))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while !application.completed && ContinuousClock.now < deadline { try application.display.dispatch(timeoutMilliseconds: 100) }
+        application.display.requestClose()
+        let snapshot = try application.display.snapshot()
+        guard snapshot.retainedRecords == 0 else { throw ServerApplication.ServerExampleError.incompleteCleanup }
+        guard application.completed else { throw ServerApplication.ServerExampleError.timeout }
+        withExtendedLifetime(global) {}
+        print("Typed surface lifecycle completed; all server ownership records retired.")
+    }
+}
+```
+
+The server retains each owning object and its noncopyable request subscription in a reference-type holder. Weak application captures prevent the handler storage from strongly retaining its application owner. A new identifier is accepted exactly once to establish the server resource; unsupported requests fail explicitly. The dispatch loop has a ten-second deadline, and root closure is checked before exit. The global remains alive through dispatch.
+
+To build this server in another package, depend on the WaylandServer and WaylandProtocol products and use their matching imports, as shown in `Examples/MinimalServer/Package.swift`. Foundation is used here only to publish the socket name through standard output.
 
 ## Ownership and subscriptions
 
@@ -29,12 +221,7 @@ Version/class/session and payload validation happen before native marshalling. A
 
 requestClose() is idempotent. It invalidates all descendants immediately and can report deferred while inside a native call. Root closure does not depend on the last Swift reference disappearing. A final snapshot with zero retained records establishes that this session's tracked obligations retired; it is not a proof against arbitrary user ARC cycles or fatal process termination.
 
-## Paired public server example
 
-Scripts/verify-examples.py builds both standalone packages and runs the registry client against Examples/MinimalServer in a temporary private runtime directory. The server supports only the example's control-plane surface lifecycle. It is not a rendering compositor. The check verifies typed constructor acceptance, destruction, public import boundaries, record retirement, and removal of the native socket/lock files.
+## Next steps
 
-```sh
-python3 Scripts/verify-examples.py
-```
-
-The same client was also run against the workstation's existing KWin Wayland session. The scope is registry/sync and an unmapped surface lifecycle; it does not validate rendering, input devices, extensions, or a foreign EGL driver. See <doc:TypedProtocol>, <doc:ClientAndServer>, and <doc:AdvancedAPIs> for the full contracts.
+Read <doc:TypedProtocol> for typed request and event contracts, <doc:OwnedProtocolMetadata> for imported protocol metadata, and <doc:ClientAndServer> for queue coordination and server-resource lifetimes. Use <doc:AdvancedAPIs> for optional cursor, EGL, SHM, and utility integrations. <doc:ContinuousIntegration> describes the full verification matrix and its current limitations.

@@ -115,6 +115,20 @@ def main():
                         '--synthesized-landing-page-name', 'WaylandKit'], env=environment, check=True)
         if combined.exists(): shutil.rmtree(combined)
         shutil.move(replacement, combined)
+    # The merged navigator otherwise puts the project guide after every API module.
+    # Keep its overview reachable as the first sidebar entry from every module page.
+    navigator_path = combined / 'index/index.json'
+    navigator = json.loads(navigator_path.read_text())
+    for roots in navigator['interfaceLanguages'].values():
+        for root in roots:
+            children = root.get('children', [])
+            project = next((child for child in children if child.get('path') == '/documentation/project'), None)
+            if project is None:
+                raise RuntimeError('The project overview is missing from the merged navigator.')
+            children.remove(project)
+            project['title'] = 'Project overview'
+            children.insert(0, project)
+    navigator_path.write_text(json.dumps(navigator) + '\n')
     if arguments.hosting_base_path is not None:
         subprocess.run([str(docc), 'process-archive', 'transform-for-static-hosting', str(combined),
                         '--hosting-base-path', arguments.hosting_base_path], env=environment, check=True)
