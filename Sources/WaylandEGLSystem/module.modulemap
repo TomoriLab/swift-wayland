@@ -1,0 +1,5 @@
+module WaylandEGLSystem [system] {
+    header "shim.h"
+    link "wayland-egl"
+    export *
+}

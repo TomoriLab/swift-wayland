@@ -24,6 +24,7 @@ jobs:
           name: waylandkit-x86_64-evidence
           path: |
             .build/validation/
+            .build/toolchain-probes/
             .build/documentation/report.json
             .build/examples-report.json
             .build/typed-benchmark.json
@@ -31,4 +32,5 @@ jobs:
             .build/shm-faults/
             .build/native-*-verification.json
             .build/proxy-*.log
+          include-hidden-files: true
           retention-days: 14

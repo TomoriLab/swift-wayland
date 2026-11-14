@@ -33,7 +33,9 @@ def run(name,command):
     report['checks'].append({'name':name,'command':[str(value) for value in command], 'returncode':result.returncode,
                              'seconds':time.monotonic()-started,'log':str((output/(name+'.log')).relative_to(ROOT))})
     write_report()
-    if result.returncode:raise RuntimeError(name+' failed; inspect '+str(output/(name+'.log')))
+    if result.returncode:
+        print((output/(name+'.log')).read_text(errors='replace'), flush=True)
+        raise RuntimeError(name+' failed; inspect '+str(output/(name+'.log')))
     print('PASS',name,flush=True)
 run('toolchain',['python3','Scripts/verify-toolchain.py'])
 for name in ['generate-protocol','generate-typed-protocol','generate-extension-fixtures','generate-native-interop','generate-native-abi-checks','generate-facade','generate-core-peer-tests','generate-core-server-tests','verify-api-coverage']:

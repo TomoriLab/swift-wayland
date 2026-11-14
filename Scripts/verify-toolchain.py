@@ -22,11 +22,12 @@ COMMON_FLAGS = [
 
 
 def compiler_path(requested):
+    # The driver selects swiftc mode from argv[0], so retain the executable symlink name.
     if requested:
-        return Path(requested).expanduser().resolve()
+        return Path(requested).expanduser().absolute()
     selected = os.environ.get("SWIFTC") or shutil.which("swiftc")
     if selected:
-        return Path(selected).resolve()
+        return Path(selected).absolute()
     # This fallback avoids mistaking OpenStack's swift CLI for the Swift compiler.
     candidate = Path.home() / ".local/share/swiftly/toolchains/6.4.2/usr/bin/swiftc"
     if candidate.is_file():

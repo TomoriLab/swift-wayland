@@ -1,0 +1,5 @@
+module WaylandCursorSystem [system] {
+    header "shim.h"
+    link "wayland-cursor"
+    export *
+}

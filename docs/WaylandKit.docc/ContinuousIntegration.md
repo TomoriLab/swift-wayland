@@ -4,7 +4,7 @@ Run the pinned compiler, native, ownership, documentation, and lifecycle checks 
 
 ## Runner contract
 
-All workflows use GitHub-hosted `ubuntu-26.04` runners. The shared `.github/actions/setup-wayland` action installs Swift 6.4.2 through the Swiftly-based `swift-actions/setup-swift@v3` action (currently beta), installs native build prerequisites, and builds the checksum-pinned libwayland 1.26.0 source with its scanner into `.build/native-none-install`. Workspace-local include, library, loader, pkg-config, and executable paths select that build. No self-hosted runner is required. The validation workflow uses manual and main-branch push triggers. Hosted performance measurements remain subject to runner variability and do not waive the acceptance thresholds.
+All workflows use GitHub-hosted `ubuntu-26.04` runners. The shared `.github/actions/setup-wayland` action installs Swift 6.4.2 through the Swiftly-based `swift-actions/setup-swift@v3` action (currently beta), installs native build prerequisites, and builds the checksum-pinned libwayland 1.26.0 source with its scanner into `.build/native-none-install`. SwiftPM system-library targets read the workspace-local include and link paths from pkg-config. Loader and executable paths select that build for runtime checks and the scanner; Swift package builds do not depend on CPATH or LIBRARY_PATH propagation. No self-hosted runner is required. The validation workflow uses manual and main-branch push triggers. Hosted performance measurements remain subject to runner variability and do not waive the acceptance thresholds.
 
 ```sh
 python3 Scripts/validate.py --native-sanitizers --soak --benchmark
@@ -20,7 +20,7 @@ This workflow reports the Swift Testing suite separately from the full validatio
 
 ## Evidence and limitations
 
-Each command writes a separate log under .build/validation and an aggregate report. Native instrumentation confirms loaded library paths. Address checks keep leak detection enabled and preserve ODR detection by loading instrumented client/server libraries in separate variants. Cursor/EGL instrumentation accompanies these variants; TSan loads the isolated native library set together. No sanitizer suppression is part of the configuration.
+Each command writes a separate log under .build/validation and an aggregate report. Failed validation commands also print their captured output to the job log. Artifact uploads explicitly include hidden files so .build diagnostics are retained. Test and documentation jobs preserve their console logs on success and failure; Bash pipefail preserves the original command failure through tee. Native instrumentation confirms loaded library paths. Address checks keep leak detection enabled and preserve ODR detection by loading instrumented client/server libraries in separate variants. Cursor/EGL instrumentation accompanies these variants; TSan loads the isolated native library set together. No sanitizer suppression is part of the configuration.
 
 The lifecycle executable warms up before measuring FD counts. Every iteration closes client, server, descriptor, byte-array, and SHM sessions and asserts zero retained records. It includes lazy cursor buffers, EGL windows, subscriptions, globals, idle/timer sources, explicit native SHM refs, client destruction, descriptor duplication, and owned snapshots. Stable FD counts and ledgers are checked directly. RSS is not used as a substitute for leak instrumentation.
 

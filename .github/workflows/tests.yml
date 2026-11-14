@@ -21,4 +21,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-wayland
       - name: Run Swift Testing suite
-        run: swift test --configuration "${{ matrix.configuration }}" --disable-xctest -Xswiftc -warnings-as-errors
+        shell: bash
+        run: |
+          mkdir -p .build/test-logs
+          swift test --configuration "${{ matrix.configuration }}" --disable-xctest -Xswiftc -warnings-as-errors 2>&1 | tee ".build/test-logs/${{ matrix.configuration }}.log"
+      - name: Preserve test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylandkit-tests-${{ matrix.configuration }}
+          path: .build/test-logs/
+          include-hidden-files: true
+          retention-days: 14
